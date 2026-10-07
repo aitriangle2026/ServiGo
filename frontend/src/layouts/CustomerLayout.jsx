@@ -1,10 +1,14 @@
 import { Link } from 'react-router-dom';
 import Sidebar from '@/components/layout/Sidebar';
+import NotificationBell from '@/components/notifications/NotificationBell';
 import { useAuth } from '@/context/AuthContext';
 
 const CUSTOMER_LINKS = [
   { label: 'Overview', path: '/customer/dashboard' },
+  { label: 'Notifications', path: '/customer/notifications' },
+  { label: 'Messages', path: '/messages' },
   { label: 'My Bookings', path: '/customer/bookings' },
+  { label: 'Job Requests', path: '/customer/job-requests' },
   { label: 'Favorites', path: '/customer/favorites' },
   { label: 'Profile', path: '/customer/profile' },
 ];
@@ -29,6 +33,7 @@ export default function DashboardLayout({ children, title }) {
             <Link to="/" className="hidden text-sm font-medium text-text-muted hover:text-secondary sm:block">
               ← Back to site
             </Link>
+            <NotificationBell viewAllPath="/customer/notifications" />
             <span className="hidden text-sm text-text-muted sm:block">
               Hi, {user?.firstName || 'there'}
             </span>

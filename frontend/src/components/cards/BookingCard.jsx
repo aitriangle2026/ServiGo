@@ -24,11 +24,15 @@ export default function BookingCard({ booking, onReview }) {
     ? `${booking.provider.user.firstName} ${booking.provider.user.lastName}`
     : 'Provider';
 
-  const formattedDate = new Date(booking.bookingDate).toLocaleDateString('en-LK', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
+  // Bookings created from an approved chat invoice may not have a fixed
+  // slot yet (customer/provider coordinate the exact time over chat).
+  const formattedDate = booking.bookingDate
+    ? new Date(booking.bookingDate).toLocaleDateString('en-LK', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+      })
+    : 'To be scheduled';
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import ProviderLayout from '@/layouts/ProviderLayout';
 import useFetch from '@/hooks/useFetch';
+import { providerService } from '@/services/providerService';
 import { serviceService } from '@/services/serviceService';
 import Button from '@/components/common/Button';
 import Modal from '@/components/common/Modal';
@@ -14,15 +15,36 @@ const EMPTY_FORM = { title: '', description: '', workDetails: '', duration: '', 
 
 export default function ProviderServices() {
   const { user } = useAuth();
+  const [providerProfileId, setProviderProfileId] = useState(null);
+
   const { data, isLoading, error, refetch } = useFetch(
-    () => serviceService.search({ mine: true, limit: 50 }),
-    []
+    () => {
+      if (!providerProfileId) return Promise.resolve({ data: [] });
+      return serviceService.search({ provider: providerProfileId, limit: 50 });
+    },
+    [providerProfileId]
   );
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profileRes = await providerService.getMyProfile();
+        const profileId = profileRes?.data?._id || profileRes?._id;
+        setProviderProfileId(profileId || null);
+      } catch {
+        setProviderProfileId(null);
+      }
+    };
+
+    if (user) {
+      loadProfile();
+    }
+  }, [user]);
 
   const allServices = Array.isArray(data)
     ? data
     : data?.services ?? data?.results ?? data?.data ?? [];
-  const services = allServices.filter((s) => s.provider?.user?._id === user?._id);
+  const services = allServices.filter((s) => s.provider?._id === providerProfileId || s.provider?.user?._id === user?._id);
 
   const [categories, setCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);

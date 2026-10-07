@@ -5,6 +5,7 @@ import { FaBars, FaTimes, FaUserCircle } from 'react-icons/fa';
 import { NAV_LINKS, APP_NAME } from '@/utils/constants';
 import Button from '@/components/common/Button';
 import { useAuth } from '@/context/AuthContext';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -60,16 +61,22 @@ const Navbar = () => {
             Become a Pro
           </Link>
           {isAuthenticated ? (
-            <button
-              onClick={() => {
-                if (user?.role === 'provider') navigate('/provider/dashboard');
-                else if (user?.role === 'admin') navigate('/admin/dashboard');
-                else navigate('/customer/dashboard');
-              }}
-              className="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm font-medium text-secondary hover:border-primary"
-            >
-              <FaUserCircle className="text-lg" /> Account
-            </button>
+            <>
+              {/* Logged-in visitors spend most of their time on these public
+                  pages, so the bell lives here too — otherwise the unread
+                  badge only existed inside the dashboard layouts. */}
+              <NotificationBell />
+              <button
+                onClick={() => {
+                  if (user?.role === 'provider') navigate('/provider/dashboard');
+                  else if (user?.role === 'admin') navigate('/admin/dashboard');
+                  else navigate('/customer/dashboard');
+                }}
+                className="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm font-medium text-secondary hover:border-primary"
+              >
+                <FaUserCircle className="text-lg" /> Account
+              </button>
+            </>
           ) : (
             <>
               <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
@@ -82,13 +89,18 @@ const Navbar = () => {
           )}
         </div>
 
-        <button
-          onClick={() => setMobileOpen((v) => !v)}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-secondary lg:hidden"
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
-        </button>
+        {/* On phones the bell sits beside the menu toggle, so the unread
+            badge stays visible without opening the menu. */}
+        <div className="flex items-center gap-1 lg:hidden">
+          {isAuthenticated && <NotificationBell />}
+          <button
+            onClick={() => setMobileOpen((v) => !v)}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-secondary"
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+          </button>
+        </div>
       </nav>
 
       <AnimatePresence>

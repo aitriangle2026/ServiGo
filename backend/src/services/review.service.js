@@ -90,13 +90,29 @@ const provider = await ProviderProfile.findById(bookingData.provider);
 const service = await Booking.findById(booking)
   .populate("service", "title");
 
-await notificationService.createNotification({
-  user: provider.user,
-  title: "New Review",
-  message: `Your service "${service.service.title}" received a new review.`,
-  type: "review",
-  referenceId: newReview._id,
-});
+const reviewedServiceTitle = service?.service?.title || "your service";
+
+await Promise.all([
+  notificationService.createNotification({
+    user: provider.user,
+    type: "review_received",
+    audience: "provider",
+    message: `Your service "${reviewedServiceTitle}" received a new ${rating}-star review.`,
+    referenceId: newReview._id,
+  }),
+  notificationService.createNotification({
+    user: userId,
+    type: "review_submitted",
+    audience: "customer",
+    message: `Thanks — your review for "${reviewedServiceTitle}" was submitted.`,
+    referenceId: newReview._id,
+  }),
+  notificationService.notifyAdmins({
+    type: "new_review",
+    message: `A customer left a ${rating}-star review on "${reviewedServiceTitle}".`,
+    referenceId: newReview._id,
+  }),
+]);
 
 return await Review.findById(newReview._id)
   .populate("customer", "firstName lastName")

@@ -74,6 +74,31 @@ const userSchema = new mongoose.Schema(
       default: null,
       select: false,
     },
+
+    // Customer's saved location, used to prioritize search results from
+    // their own city/country. Optional — guests and users who haven't set
+    // this yet just get unranked results.
+    // NOTE: deliberately not named "location" — this database already has a
+    // 2dsphere geo index on that field name from earlier map-related work,
+    // and colliding with it makes every save() fail with "Can't extract geo
+    // keys". Keep this name distinct from any GeoJSON coordinate field.
+    preferredLocation: {
+      city: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      district: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      country: {
+        type: String,
+        default: "Sri Lanka",
+        trim: true,
+      },
+    },
   },
   {
     timestamps: true,

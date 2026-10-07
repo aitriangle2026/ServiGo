@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ProviderLayout from '@/layouts/ProviderLayout';
 import useFetch from '@/hooks/useFetch';
+import useHighlight from '@/hooks/useHighlight';
 import { bookingService } from '@/services/bookingService';
 import BookingCard from '@/components/cards/BookingCard';
 import EmptyState from '@/components/common/EmptyState';
@@ -18,6 +19,9 @@ export default function ProviderBookings() {
   const { data, isLoading, error, refetch } = useFetch(() => bookingService.getProviderBookings(), []);
   const [updatingId, setUpdatingId] = useState(null);
   const bookings = data?.data || [];
+
+  // Scrolls to and flags the booking a notification linked to.
+  const { isHighlighted } = useHighlight(bookings);
 
   const handleUpdate = async (bookingId, status) => {
     setUpdatingId(bookingId);
@@ -42,7 +46,13 @@ export default function ProviderBookings() {
       {!error && !isLoading && bookings.length > 0 && (
         <div className="space-y-4">
           {bookings.map((booking) => (
-            <div key={booking._id} className="rounded-2xl border border-border bg-surface p-5">
+            <div
+              key={booking._id}
+              id={`item-${booking._id}`}
+              className={`rounded-2xl border border-border bg-surface p-5 transition-shadow ${
+                isHighlighted(booking._id) ? 'ring-2 ring-primary ring-offset-2' : ''
+              }`}
+            >
               <BookingCard booking={booking} />
               {NEXT_STATUS[booking.status] && (
                 <div className="mt-4 flex gap-2 border-t border-border pt-4">

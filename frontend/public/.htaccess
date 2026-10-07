@@ -1,0 +1,51 @@
+# Apache config for the built React app on Hostinger shared hosting.
+# Vite copies everything in public/ into dist/, so this ships with the build.
+
+# ─── SPA routing ──────────────────────────────────────────────────────────
+# React Router owns paths like /services/123 and /customer/bookings. Those
+# folders don't exist on disk, so Apache would return 404 on a refresh or a
+# shared link. Send anything that isn't a real file to index.html and let
+# the router decide.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Leave real files and directories alone (assets, images, favicon).
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# ─── Caching ──────────────────────────────────────────────────────────────
+# Vite fingerprints asset filenames (index-ABC123.js), so those are safe to
+# cache forever. index.html must never be cached, or visitors keep loading
+# an old build that points at deleted asset files.
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 month"
+  ExpiresByType image/png "access plus 1 month"
+  ExpiresByType image/jpeg "access plus 1 month"
+  ExpiresByType image/webp "access plus 1 month"
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "index\.html$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+
+  # Basic hardening.
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# ─── Compression ──────────────────────────────────────────────────────────
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain
+  AddOutputFilterByType DEFLATE application/javascript application/json
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>

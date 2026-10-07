@@ -1,12 +1,28 @@
 const User = require("../models/User");
 
 const updateProfile = async (userId, data) => {
-  const { firstName, lastName, phone } = data;
+  const { firstName, lastName, phone, preferredLocation, location } = data;
+  const update = {};
+
+  if (firstName !== undefined) update.firstName = firstName;
+  if (lastName !== undefined) update.lastName = lastName;
+  if (phone !== undefined) update.phone = phone;
+
+  const locationData = preferredLocation || location;
+  if (locationData && typeof locationData === "object") {
+    const current = (await User.findById(userId).select("preferredLocation").lean())?.preferredLocation || {};
+    update.preferredLocation = {
+      city: locationData.city !== undefined ? locationData.city : current.city || "",
+      district: locationData.district !== undefined ? locationData.district : current.district || "",
+      country: locationData.country !== undefined ? locationData.country : current.country || "Sri Lanka",
+    };
+  }
+
   const user = await User.findByIdAndUpdate(
     userId,
-    { firstName, lastName, phone },
+    update,
     { new: true, runValidators: true }
-  );
+  ).select("-password -refreshToken");
 
   if (!user) {
     throw new Error("User not found");

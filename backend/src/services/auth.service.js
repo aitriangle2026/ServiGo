@@ -2,6 +2,7 @@ const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
 const generateRefreshToken = require("../utils/generateRefreshToken");
 const jwt = require("jsonwebtoken");
+const notificationService = require("./notification.service");
 
 const register = async (userData) => {
   const existingUser = await User.findOne({
@@ -13,6 +14,19 @@ const register = async (userData) => {
   }
 
   const user = await User.create(userData);
+
+  // Admins are told about every new account. A failure here must never cost
+  // someone their registration, so it's deliberately not awaited into the
+  // success path.
+  if (user.role !== "admin") {
+    notificationService
+      .notifyAdmins({
+        type: user.role === "provider" ? "new_provider" : "new_customer",
+        message: `${user.firstName} ${user.lastName} registered as a ${user.role}.`,
+        referenceId: user._id,
+      })
+      .catch(() => {});
+  }
 
   const userResponse = user.toObject();
   delete userResponse.password;

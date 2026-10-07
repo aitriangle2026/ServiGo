@@ -2,13 +2,15 @@ const express = require("express");
 const router = express.Router();
 
 const serviceController = require("../controllers/service.controller");
-const { protect, authorize } = require("../middleware/auth.middleware");
+const { protect, authorize, optionalAuth } = require("../middleware/auth.middleware");
 const {
   uploadServiceImages,
   uploadPortfolioImages,
 } = require("../middleware/upload.middleware");
 
-router.get("/", serviceController.getAllServices);
+// optionalAuth: logged-in customers get results ranked by their saved
+// location; guests get the normal unranked list. Still a public route.
+router.get("/", optionalAuth, serviceController.getAllServices);
 router.get("/:id", serviceController.getServiceById);
 
 router.post(

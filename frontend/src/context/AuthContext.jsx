@@ -82,6 +82,13 @@ export function AuthProvider({ children }) {
     }
   }, [clearSession]);
 
+  // Lets other parts of the app (e.g. the profile page) refresh the stored
+  // user after an update, without going through a full login.
+  const updateUser = useCallback((updatedUser) => {
+    localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  }, []);
+
   const value = {
     user,
     isAuthenticated: !!user,
@@ -90,6 +97,7 @@ export function AuthProvider({ children }) {
     register,
     googleLogin,
     logout,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

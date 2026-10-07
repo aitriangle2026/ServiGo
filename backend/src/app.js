@@ -14,9 +14,24 @@ const reviewRoutes = require("./routes/review.routes");
 const favoriteRoutes = require("./routes/favorite.routes");
 const notificationRoutes = require("./routes/notification.routes");
 const userRoutes = require("./routes/user.routes");
+const chatRoutes = require("./routes/chat.routes");
+const invoiceRoutes = require("./routes/invoice.routes");
+const supportRoutes = require("./routes/support.routes");
+const jobRequestRoutes = require("./routes/jobRequest.routes");
 
 // Middlewares
-const allowedOrigins = ["http://localhost:5173", "https://your-deployed-frontend.com"];
+//
+// Allowed browser origins. Local dev is always permitted; production domains
+// come from CLIENT_URL in .env (comma-separated for more than one), so
+// deploying to a new domain is a config change rather than a code change.
+//   CLIENT_URL=https://servigo.lk,https://www.servigo.lk
+const allowedOrigins = [
+  "http://localhost:5173",
+  ...(process.env.CLIENT_URL || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+];
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -49,6 +64,10 @@ app.use("/api/v1/reviews", reviewRoutes);
 app.use("/api/v1/favorites", favoriteRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/chat", chatRoutes);
+app.use("/api/v1/invoices", invoiceRoutes);
+app.use("/api/v1/support", supportRoutes);
+app.use("/api/v1/job-requests", jobRequestRoutes);
 app.use("/api/v1/auth/forgot-password", otpLimiter);
 app.use("/api/v1/auth/send-otp", otpLimiter);
 app.use("/api/v1/auth/resend-otp", otpLimiter);

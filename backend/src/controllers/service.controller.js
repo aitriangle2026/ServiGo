@@ -30,7 +30,7 @@ const createService = async (req, res) => {
 
 const getAllServices = async (req, res) => {
   try {
-    const result = await serviceService.getAllServices(req.query);
+    const result = await serviceService.getAllServices(req.query, req.user);
 
     res.status(200).json({
       success: true,
@@ -191,4 +191,3 @@ module.exports = {
   uploadServiceImages,
   uploadPortfolioImages,
 };
-  

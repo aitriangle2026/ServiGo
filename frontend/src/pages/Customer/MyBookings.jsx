@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import CustomerLayout from '@/layouts/CustomerLayout';
 import useFetch from '@/hooks/useFetch';
+import useHighlight from '@/hooks/useHighlight';
 import { bookingService } from '@/services/bookingService';
 import BookingCard from '@/components/cards/BookingCard';
 import EmptyState from '@/components/common/EmptyState';
@@ -28,6 +29,12 @@ export default function MyBookings() {
     if (activeTab === 'cancelled') return ['cancelled', 'rejected'].includes(b.status);
     return true;
   });
+
+  // Scrolls to and flags the booking a notification linked to. Arriving from
+  // a notification is always a fresh navigation, so `activeTab` is still
+  // "all" and every booking is rendered — if the user has since switched
+  // tabs and the row is hidden, the highlight simply doesn't fire.
+  const { isHighlighted } = useHighlight(filtered);
 
   return (
     <CustomerLayout title="My Bookings">
@@ -70,7 +77,15 @@ export default function MyBookings() {
       {!error && !isLoading && filtered.length > 0 && (
         <div className="space-y-4">
           {filtered.map((booking) => (
-            <BookingCard key={booking._id} booking={booking} onReview={setReviewBooking} />
+            <div
+              key={booking._id}
+              id={`item-${booking._id}`}
+              className={`rounded-2xl transition-shadow ${
+                isHighlighted(booking._id) ? 'ring-2 ring-primary ring-offset-2' : ''
+              }`}
+            >
+              <BookingCard booking={booking} onReview={setReviewBooking} />
+            </div>
           ))}
         </div>
       )}

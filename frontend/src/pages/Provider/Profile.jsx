@@ -7,14 +7,20 @@ import Button from '@/components/common/Button';
 
 export default function ProviderProfile() {
   const { data, isLoading, error, refetch } = useFetch(() => providerService.getMyProfile(), []);
-  const [form, setForm] = useState({ bio: '', experience: '' });
+  const [form, setForm] = useState({ bio: '', experience: '', city: '', district: '', country: 'Sri Lanka' });
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (data?.data) {
-      setForm({ bio: data.data.bio || '', experience: data.data.experience || '' });
+      setForm({
+        bio: data.data.bio || '',
+        experience: data.data.experience || '',
+        city: data.data.workingArea?.city || '',
+        district: data.data.workingArea?.district || '',
+        country: data.data.workingArea?.country || 'Sri Lanka',
+      });
     }
   }, [data]);
 
@@ -23,7 +29,21 @@ export default function ProviderProfile() {
     setSaveError('');
     setSaved(false);
     try {
-      await providerService.updateProfile({ ...form, experience: Number(form.experience) });
+      // Merge onto the existing workingArea rather than sending a bare
+      // { city, district, country } object — the backend writes this
+      // straight through as the new subdocument, so anything not included
+      // here (address, latitude/longitude, radius) would otherwise be wiped.
+      const existingWorkingArea = data?.data?.workingArea || {};
+      await providerService.updateProfile({
+        bio: form.bio,
+        experience: Number(form.experience),
+        workingArea: {
+          ...existingWorkingArea,
+          city: form.city,
+          district: form.district,
+          country: form.country,
+        },
+      });
       setSaved(true);
       refetch();
     } catch (err) {
@@ -78,6 +98,21 @@ export default function ProviderProfile() {
         <div className="space-y-4">
           <Input label="Bio" value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} />
           <Input label="Years of experience" type="number" value={form.experience} onChange={(e) => setForm((f) => ({ ...f, experience: e.target.value }))} />
+
+          <div>
+            <p className="mb-1.5 text-sm font-semibold text-secondary">Working area</p>
+            <p className="mb-3 text-xs text-text-muted">
+              Customers searching from this city or district will see your services first.
+            </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input label="City" value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="e.g. Colombo" />
+              <Input label="District" value={form.district} onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))} placeholder="e.g. Colombo" />
+            </div>
+            <div className="mt-4">
+              <Input label="Country" value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))} />
+            </div>
+          </div>
+
           <Button variant="primary" isLoading={isSaving} onClick={handleSave}>Save changes</Button>
         </div>
       </div>

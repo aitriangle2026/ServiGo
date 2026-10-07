@@ -33,6 +33,13 @@ router.put(
   bookingController.updateBookingStatus
 );
 
+router.put(
+  "/:id/cancel",
+  protect,
+  authorize("customer"),
+  bookingController.cancelBooking
+);
+
 router.get(
   "/",
   protect,

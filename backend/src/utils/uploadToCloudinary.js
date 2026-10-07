@@ -1,11 +1,14 @@
 const cloudinary = require("../config/cloudinary");
 
-const uploadToCloudinary = (fileBuffer, folder) => {
+// resourceType: "image" (default, existing behavior) | "video" (Cloudinary
+// stores audio files, e.g. chat voice notes, under "video") | "raw" (PDFs,
+// docs, and anything else that isn't image/audio/video).
+const uploadToCloudinary = (fileBuffer, folder, resourceType = "image") => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder,
-        resource_type: "image",
+        resource_type: resourceType,
       },
       (error, result) => {
         if (error) {

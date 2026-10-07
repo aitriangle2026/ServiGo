@@ -1,16 +1,55 @@
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import CustomerLayout from '@/layouts/CustomerLayout';
-import { FaUser, FaEnvelope, FaPhone, FaShieldAlt } from 'react-icons/fa';
+import Input from '@/components/common/Input';
+import Button from '@/components/common/Button';
+import { userService } from '@/services/userService';
+import { FaEnvelope, FaShieldAlt } from 'react-icons/fa';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
 
-  const fields = [
-    { icon: FaUser, label: 'Full name', value: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() },
-    { icon: FaEnvelope, label: 'Email', value: user?.email },
-    { icon: FaPhone, label: 'Phone', value: user?.phone },
-    { icon: FaShieldAlt, label: 'Account type', value: user?.role },
-  ];
+  const [form, setForm] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    phone: user?.phone || '',
+    city: user?.preferredLocation?.city || '',
+    district: user?.preferredLocation?.district || '',
+    country: user?.preferredLocation?.country || 'Sri Lanka',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
+
+  const handleChange = (field) => (e) => {
+    setForm((f) => ({ ...f, [field]: e.target.value }));
+    setSaved(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSaved(false);
+    setIsSaving(true);
+    try {
+      const { data } = await userService.updateProfile({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phone: form.phone,
+        preferredLocation: {
+          city: form.city,
+          district: form.district,
+          country: form.country,
+        },
+      });
+      updateUser(data);
+      setSaved(true);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Could not save your profile.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <CustomerLayout title="Profile">
@@ -23,29 +62,50 @@ export default function Profile() {
             <p className="font-display text-lg font-bold text-secondary">
               {user?.firstName} {user?.lastName}
             </p>
-            <p className="text-sm text-text-muted">{user?.email}</p>
+            <p className="flex items-center gap-1.5 text-sm text-text-muted">
+              <FaEnvelope size={11} /> {user?.email}
+            </p>
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs capitalize text-text-muted">
+              <FaShieldAlt size={11} /> {user?.role} account
+            </p>
           </div>
         </div>
 
-        <div className="space-y-4 border-t border-border pt-5">
-          {fields.map((field) => {
-            const Icon = field.icon;
-            return (
-              <div key={field.label} className="flex items-center gap-3">
-                <Icon className="text-primary" />
-                <div>
-                  <p className="text-xs text-text-muted">{field.label}</p>
-                  <p className="text-sm font-medium text-secondary">{field.value || '—'}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <form onSubmit={handleSave} className="space-y-4 border-t border-border pt-5">
+          {error && (
+            <p className="rounded-xl border border-danger/20 bg-danger-light p-3 text-sm text-danger">{error}</p>
+          )}
+          {saved && (
+            <p className="rounded-xl border border-success/20 bg-success-light p-3 text-sm text-success">
+              Profile updated.
+            </p>
+          )}
 
-        <p className="mt-6 text-xs text-text-muted">
-          Profile editing isn't available yet — the backend doesn't currently expose a
-          general update-profile endpoint for customer accounts.
-        </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input label="First name" value={form.firstName} onChange={handleChange('firstName')} />
+            <Input label="Last name" value={form.lastName} onChange={handleChange('lastName')} />
+          </div>
+
+          <Input label="Phone" value={form.phone} onChange={handleChange('phone')} />
+
+          <div>
+            <p className="mb-1.5 text-sm font-semibold text-secondary">Your location</p>
+            <p className="mb-3 text-xs text-text-muted">
+              Used to show you nearby services and providers first when you search.
+            </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input label="City" value={form.city} onChange={handleChange('city')} placeholder="e.g. Colombo" />
+              <Input label="District" value={form.district} onChange={handleChange('district')} placeholder="e.g. Colombo" />
+            </div>
+            <div className="mt-4">
+              <Input label="Country" value={form.country} onChange={handleChange('country')} />
+            </div>
+          </div>
+
+          <Button type="submit" variant="primary" isLoading={isSaving}>
+            Save changes
+          </Button>
+        </form>
       </div>
     </CustomerLayout>
   );

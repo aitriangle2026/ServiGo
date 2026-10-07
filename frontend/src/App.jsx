@@ -12,6 +12,9 @@ import CustomerDashboard from '@/pages/Customer/Dashboard';
 import MyBookings from '@/pages/Customer/MyBookings';
 import Favorites from '@/pages/Customer/Favorites';
 import Profile from '@/pages/Customer/Profile';
+import MyJobRequests from '@/pages/Customer/MyJobRequests';
+import PostJobRequest from '@/pages/Customer/PostJobRequest';
+import JobRequestDetail from '@/pages/Customer/JobRequestDetail';
 import About from '@/pages/About/About';
 import ProviderDashboard from '@/pages/Provider/Dashboard';
 import ProviderServices from '@/pages/Provider/Services';
@@ -20,12 +23,31 @@ import ProviderProfile from '@/pages/Provider/Profile';
 import ProviderReviews from '@/pages/Provider/Reviews';
 import ProviderEarnings from '@/pages/Provider/Earnings';
 import ProviderOnboarding from '@/pages/Provider/Onboarding';
+import ProviderJobRequests from '@/pages/Provider/JobRequests';
+import ProviderVerification from '@/pages/Provider/Verification';
 import AdminDashboard from '@/pages/Admin/Dashboard';
 import AdminProviders from '@/pages/Admin/Providers';
 import ServiceDetail from '@/pages/Services/ServiceDetail';
 import AdminCategories from '@/pages/Admin/Categories';
 import AdminUsers from '@/pages/Admin/Users';
 import AdminBookings from '@/pages/Admin/Bookings';
+import AdminPayouts from '@/pages/Admin/Payouts';
+import AdminInvoices from '@/pages/Admin/Invoices';
+import AdminSupportRequests from '@/pages/Admin/SupportRequests';
+import AdminSupportChat from '@/pages/Admin/SupportChat';
+import AdminSupportChatRoom from '@/pages/Admin/SupportChatRoom';
+import ProviderSupport from '@/pages/Provider/Support';
+import ProviderDetail from '@/pages/Providers/ProviderDetail';
+import ChatList from '@/pages/Chat/ChatList';
+import ChatRoom from '@/pages/Chat/ChatRoom';
+import { Toaster } from 'react-hot-toast';
+import { CallProvider } from '@/context/CallContext';
+import { CountryProvider } from '@/context/CountryContext';
+import { NotificationProvider } from '@/context/NotificationContext';
+import CallModal from '@/components/call/CallModal';
+import CustomerNotifications from '@/pages/Customer/Notifications';
+import ProviderNotifications from '@/pages/Provider/Notifications';
+import AdminNotifications from '@/pages/Admin/Notifications';
 
 const ComingSoon = ({ label }) => (
   <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-6 text-center">
@@ -44,11 +66,15 @@ const ComingSoon = ({ label }) => (
 
 function App() {
   return (
+    <CountryProvider>
+    <NotificationProvider>
+    <CallProvider>
     <Routes>
       {/* Public pages */}
       <Route path="/" element={<Home />} />
       <Route path="/services" element={<Services />} />
       <Route path="/services/:id" element={<ServiceDetail />} />
+      <Route path="/providers/:id" element={<ProviderDetail />} />
       <Route path="/find-pros" element={<FindPros />} />
       <Route path="/about" element={<About />} />
 
@@ -93,12 +119,73 @@ function App() {
         }
       />
 
+      <Route
+        path="/customer/notifications"
+        element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <CustomerNotifications />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Job requests — "/new" stays ahead of the "/:id" route below */}
+      <Route
+        path="/customer/job-requests"
+        element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <MyJobRequests />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/customer/job-requests/new"
+        element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <PostJobRequest />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/customer/job-requests/:id"
+        element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <JobRequestDetail />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Messaging — shared between customers and providers */}
+      <Route
+        path="/messages"
+        element={
+          <ProtectedRoute allowedRoles={['customer', 'provider']}>
+            <ChatList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/messages/:conversationId"
+        element={
+          <ProtectedRoute allowedRoles={['customer', 'provider']}>
+            <ChatRoom />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Provider portal */}
       <Route
         path="/provider/onboarding"
         element={
           <ProtectedRoute allowedRoles={['provider']}>
             <ProviderOnboarding />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/provider/verification"
+        element={
+          <ProtectedRoute allowedRoles={['provider']}>
+            <ProviderVerification />
           </ProtectedRoute>
         }
       />
@@ -115,6 +202,22 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={['provider']}>
             <ProviderServices />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/provider/notifications"
+        element={
+          <ProtectedRoute allowedRoles={['provider']}>
+            <ProviderNotifications />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/provider/job-requests"
+        element={
+          <ProtectedRoute allowedRoles={['provider']}>
+            <ProviderJobRequests />
           </ProtectedRoute>
         }
       />
@@ -150,6 +253,14 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/provider/support"
+        element={
+          <ProtectedRoute allowedRoles={['provider']}>
+            <ProviderSupport />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Admin portal */}
       <Route
@@ -161,6 +272,15 @@ function App() {
         }
       />
       
+      <Route
+        path="/admin/notifications"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminNotifications />
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/admin/providers"
         element={
@@ -196,10 +316,60 @@ function App() {
           </ProtectedRoute>
         }
       />
-      
+
+      <Route
+        path="/admin/payouts"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminPayouts />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/invoices"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminInvoices />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/support-requests"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminSupportRequests />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/support"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminSupportChat />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/support/:conversationId"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminSupportChatRoom />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Catch-all — must stay last */}
       <Route path="*" element={<ComingSoon label="Page Not Found" />} />
     </Routes>
+    <CallModal />
+    <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+    </CallProvider>
+    </NotificationProvider>
+    </CountryProvider>
   );
 }
 

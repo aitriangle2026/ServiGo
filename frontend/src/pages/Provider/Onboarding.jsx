@@ -62,7 +62,10 @@ export default function ProviderOnboarding() {
 
       await providerService.uploadNicImages({ nicFrontImage, nicBackImage });
 
-      navigate('/provider/dashboard');
+      // New profiles start in "draft" verification status — send them to
+      // the checklist to finish earning points and submit, rather than the
+      // dashboard, where they wouldn't be visible to any admin yet anyway.
+      navigate('/provider/verification');
     } catch (err) {
       setError(err?.response?.data?.message || 'Could not create your provider profile.');
     } finally {

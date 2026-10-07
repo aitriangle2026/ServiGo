@@ -93,7 +93,7 @@ const uploadProfileImage = async (req, res) => {
 
 const getAllProviders = async (req, res) => {
   try {
-    const result = await providerService.getAllProviders(req.query);
+    const result = await providerService.getAllProviders(req.query, req.user);
     res.status(200).json({ success: true, ...result });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -173,6 +173,111 @@ const uploadNicImages = async (req, res) => {
   }
 };
 
+const uploadSelfieImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No selfie uploaded" });
+    }
+
+    const result = await uploadToCloudinary(req.file.buffer, "service-marketplace/selfies");
+    const profile = await providerService.uploadSelfieImage(req.user._id, result.secure_url);
+
+    res.status(200).json({ success: true, message: "Selfie uploaded successfully", data: profile });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const addPortfolioImages = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, message: "No images uploaded" });
+    }
+
+    const uploads = await Promise.all(
+      req.files.map((file) => uploadToCloudinary(file.buffer, "service-marketplace/provider-portfolio"))
+    );
+    const profile = await providerService.addPortfolioImages(
+      req.user._id,
+      uploads.map((u) => u.secure_url)
+    );
+
+    res.status(200).json({ success: true, message: "Portfolio images uploaded successfully", data: profile });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const removePortfolioImage = async (req, res) => {
+  try {
+    const profile = await providerService.removePortfolioImage(req.user._id, req.body.imageUrl);
+    res.status(200).json({ success: true, data: profile });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const addCertificate = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No certificate file uploaded" });
+    }
+    if (!req.body.title?.trim()) {
+      return res.status(400).json({ success: false, message: "A title is required for the certificate" });
+    }
+
+    const result = await uploadToCloudinary(req.file.buffer, "service-marketplace/certificates", "auto");
+    const profile = await providerService.addCertificate(req.user._id, {
+      title: req.body.title.trim(),
+      fileUrl: result.secure_url,
+    });
+
+    res.status(200).json({ success: true, message: "Certificate added successfully", data: profile });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const removeCertificate = async (req, res) => {
+  try {
+    const profile = await providerService.removeCertificate(req.user._id, req.params.certificateId);
+    res.status(200).json({ success: true, data: profile });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const updatePayoutDetails = async (req, res) => {
+  try {
+    const profile = await providerService.updatePayoutDetails(req.user._id, req.body);
+    res.status(200).json({ success: true, message: "Payout details updated successfully", data: profile });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const getVerificationScore = async (req, res) => {
+  try {
+    const { profile, score } = await providerService.getVerificationScore(req.user._id);
+    res.status(200).json({ success: true, data: { profile, score } });
+  } catch (error) {
+    res.status(404).json({ success: false, message: error.message });
+  }
+};
+
+const submitForReview = async (req, res) => {
+  try {
+    const result = await providerService.submitForReview(req.user._id);
+    res.status(200).json({
+      success: true,
+      message: "Submitted for review — an admin will get back to you soon.",
+      data: result,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createProfile,
   getMyProfile,
@@ -183,4 +288,12 @@ module.exports = {
   getPendingProviders,
   updateVerificationStatus,
   uploadNicImages,
+  uploadSelfieImage,
+  addPortfolioImages,
+  removePortfolioImage,
+  addCertificate,
+  removeCertificate,
+  updatePayoutDetails,
+  getVerificationScore,
+  submitForReview,
 };

@@ -1,12 +1,18 @@
 import { Link } from 'react-router-dom';
 import Sidebar from '@/components/layout/Sidebar';
+import NotificationBell from '@/components/notifications/NotificationBell';
 import { useAuth } from '@/context/AuthContext';
 
 const ADMIN_LINKS = [
   { label: 'Overview', path: '/admin/dashboard' },
+  { label: 'Notifications', path: '/admin/notifications' },
   { label: 'Providers', path: '/admin/providers' },
   { label: 'Users', path: '/admin/users' },
   { label: 'Bookings', path: '/admin/bookings' },
+  { label: 'Invoices', path: '/admin/invoices' },
+  { label: 'Payouts', path: '/admin/payouts' },
+  { label: 'Support Requests', path: '/admin/support-requests' },
+  { label: 'Support Chat', path: '/admin/support' },
   { label: 'Categories', path: '/admin/categories' },
 ];
 
@@ -27,6 +33,7 @@ export default function AdminLayout({ children, title }) {
             <Link to="/" className="hidden text-sm font-medium text-text-muted hover:text-secondary sm:block">
               ← Back to site
             </Link>
+            <NotificationBell viewAllPath="/admin/notifications" />
             <span className="hidden text-sm text-text-muted sm:block">
               Hi, {user?.firstName || 'Admin'}
             </span>

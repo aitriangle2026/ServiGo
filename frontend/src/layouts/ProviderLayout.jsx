@@ -3,14 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { providerService } from '@/services/providerService';
 import { Link } from 'react-router-dom';
 import Sidebar from '@/components/layout/Sidebar';
+import NotificationBell from '@/components/notifications/NotificationBell';
 import { useAuth } from '@/context/AuthContext';
 
 const PROVIDER_LINKS = [
   { label: 'Overview', path: '/provider/dashboard' },
+  { label: 'Notifications', path: '/provider/notifications' },
+  { label: 'Verification', path: '/provider/verification' },
+  { label: 'Messages', path: '/messages' },
   { label: 'My Services', path: '/provider/services' },
   { label: 'Bookings', path: '/provider/bookings' },
+  { label: 'Job Requests', path: '/provider/job-requests' },
   { label: 'Earnings', path: '/provider/earnings' },
   { label: 'Reviews', path: '/provider/reviews' },
+  { label: 'Support', path: '/provider/support' },
   { label: 'Profile', path: '/provider/profile' },
 ];
 
@@ -41,6 +47,7 @@ useEffect(() => {
             <Link to="/" className="hidden text-sm font-medium text-text-muted hover:text-secondary sm:block">
               ← Back to site
             </Link>
+            <NotificationBell viewAllPath="/provider/notifications" />
             <span className="hidden text-sm text-text-muted sm:block">
               Hi, {user?.firstName || 'there'}
             </span>

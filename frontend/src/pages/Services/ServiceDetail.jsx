@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { FaStar, FaStarHalfAlt, FaRegStar, FaMapMarkerAlt, FaClock, FaTag } from 'react-icons/fa';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { FaStar, FaStarHalfAlt, FaRegStar, FaMapMarkerAlt, FaClock, FaTag, FaComments } from 'react-icons/fa';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Button from '@/components/common/Button';
@@ -8,6 +8,8 @@ import { serviceService } from '@/services/serviceService';
 import { formatCurrency } from '@/utils/formatCurrency';
 import BookingForm from '@/components/forms/BookingForm';
 import { reviewService } from '@/services/reviewService';
+import { chatService } from '@/services/chatService';
+import { useAuth } from '@/context/AuthContext';
 
 const renderStars = (rating = 0) => {
   const stars = [];
@@ -23,12 +25,16 @@ const renderStars = (rating = 0) => {
 
 export default function ServiceDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const [service, setService] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeImage, setActiveImage] = useState(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [reviews, setReviews] = useState([]);
+  const [isStartingChat, setIsStartingChat] = useState(false);
+  const [chatError, setChatError] = useState('');
 
   useEffect(() => {
     setIsLoading(true);
@@ -93,6 +99,27 @@ export default function ServiceDetail() {
     ? `${provider.user.firstName || ''} ${provider.user.lastName || ''}`.trim() || 'Unknown Pro'
     : 'Unknown Pro';
   const providerLocation = provider?.workingArea?.city || provider?.workingArea?.district || '';
+  const isOwnService = !!(user && provider?.user?._id && String(provider.user._id) === String(user._id || user.id));
+
+  const handleMessageProvider = async () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    setChatError('');
+    setIsStartingChat(true);
+    try {
+      const { data } = await chatService.startConversation({
+        providerId: provider?._id,
+        serviceId: service?._id,
+      });
+      navigate(`/messages/${data._id}`);
+    } catch (err) {
+      setChatError(err?.response?.data?.message || 'Could not start a conversation with this provider.');
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -169,18 +196,33 @@ export default function ServiceDetail() {
               Book Now
             </Button>
 
-            <div className="mt-6 flex items-center gap-3 rounded-2xl border border-border bg-surface p-4">
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-primary-light font-display text-lg font-bold text-primary">
-                {providerName.charAt(0) || 'P'}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-secondary">{providerName}</p>
-                {providerLocation && (
-                  <p className="flex items-center gap-1 text-xs text-text-muted">
-                    <FaMapMarkerAlt size={10} /> {providerLocation}
-                  </p>
-                )}
-              </div>
+            <div className="mt-6 rounded-2xl border border-border bg-surface p-4">
+              <Link to={`/providers/${provider?._id}`} className="flex items-center gap-3">
+                <div className="grid h-11 w-11 place-items-center rounded-full bg-primary-light font-display text-lg font-bold text-primary">
+                  {providerName.charAt(0) || 'P'}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-secondary hover:underline">{providerName}</p>
+                  {providerLocation && (
+                    <p className="flex items-center gap-1 text-xs text-text-muted">
+                      <FaMapMarkerAlt size={10} /> {providerLocation}
+                    </p>
+                  )}
+                </div>
+              </Link>
+              {!isOwnService && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  fullWidth
+                  className="mt-3"
+                  isLoading={isStartingChat}
+                  onClick={handleMessageProvider}
+                >
+                  <FaComments size={12} className="mr-1.5" /> Message provider
+                </Button>
+              )}
+              {chatError && <p className="mt-2 text-xs text-danger">{chatError}</p>}
             </div>
 
             {duration && (

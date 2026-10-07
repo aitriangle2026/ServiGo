@@ -48,12 +48,29 @@ export default function AdminProviders() {
             <div key={p._id} className="rounded-2xl border border-border bg-surface p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-display text-[15px] font-bold text-secondary">
-                    {p.user?.firstName} {p.user?.lastName}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-display text-[15px] font-bold text-secondary">
+                      {p.user?.firstName} {p.user?.lastName}
+                    </p>
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                        p.verificationScore >= 80 ? 'bg-success-light text-success' : 'bg-slate-100 text-text-muted'
+                      }`}
+                    >
+                      {p.verificationScore ?? 0}/100
+                    </span>
+                    {p.verificationScore >= 80 && (
+                      <span className="rounded-full bg-accent-light px-2.5 py-0.5 text-xs font-bold text-accent">
+                        Recommended
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-text-muted">{p.user?.email} · {p.user?.phone}</p>
-                  <p className="mt-2 text-sm text-secondary">NIC: {p.nicNumber || 'Not provided'}</p>
+                  <p className="mt-2 text-sm text-secondary">
+                    {p.documentType === 'passport' ? 'Passport' : 'NIC'}: {p.nicNumber || 'Not provided'}
+                  </p>
                   {p.bio && <p className="mt-1 text-sm text-text-muted">{p.bio}</p>}
+                  {p.experience > 0 && <p className="mt-1 text-xs text-text-muted">{p.experience} years experience</p>}
                   {p.categories?.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {p.categories.map((c) => (
@@ -64,27 +81,67 @@ export default function AdminProviders() {
                     </div>
                   )}
 
-                  {(p.nicFrontImage || p.nicBackImage) && (
-                    <div className="mt-3 flex gap-3">
-                      {p.nicFrontImage && (
-                        <a href={p.nicFrontImage} target="_blank" rel="noreferrer">
-                          <img
-                            src={p.nicFrontImage}
-                            alt="NIC front"
-                            className="h-24 w-36 rounded-lg border border-border object-cover"
-                          />
-                        </a>
-                      )}
-                      {p.nicBackImage && (
-                        <a href={p.nicBackImage} target="_blank" rel="noreferrer">
-                          <img
-                            src={p.nicBackImage}
-                            alt="NIC back"
-                            className="h-24 w-36 rounded-lg border border-border object-cover"
-                          />
-                        </a>
-                      )}
+                  {(p.nicFrontImage || p.nicBackImage || p.selfieImage) && (
+                    <div className="mt-3">
+                      <p className="mb-1.5 text-xs font-semibold text-text-muted">
+                        ID document vs. selfie — compare visually
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        {p.nicFrontImage && (
+                          <a href={p.nicFrontImage} target="_blank" rel="noreferrer">
+                            <img src={p.nicFrontImage} alt="ID front" className="h-24 w-36 rounded-lg border border-border object-cover" />
+                          </a>
+                        )}
+                        {p.nicBackImage && (
+                          <a href={p.nicBackImage} target="_blank" rel="noreferrer">
+                            <img src={p.nicBackImage} alt="ID back" className="h-24 w-36 rounded-lg border border-border object-cover" />
+                          </a>
+                        )}
+                        {p.selfieImage && (
+                          <a href={p.selfieImage} target="_blank" rel="noreferrer">
+                            <img src={p.selfieImage} alt="Selfie" className="h-24 w-24 rounded-lg border-2 border-primary/40 object-cover" />
+                          </a>
+                        )}
+                      </div>
                     </div>
+                  )}
+
+                  {p.portfolioImages?.length > 0 && (
+                    <div className="mt-3">
+                      <p className="mb-1.5 text-xs font-semibold text-text-muted">Previous work ({p.portfolioImages.length})</p>
+                      <div className="flex flex-wrap gap-2">
+                        {p.portfolioImages.map((url) => (
+                          <a key={url} href={url} target="_blank" rel="noreferrer">
+                            <img src={url} alt="" className="h-16 w-16 rounded-lg border border-border object-cover" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {p.certificates?.length > 0 && (
+                    <div className="mt-3">
+                      <p className="mb-1.5 text-xs font-semibold text-text-muted">Certificates</p>
+                      <div className="flex flex-wrap gap-2">
+                        {p.certificates.map((c) => (
+                          <a
+                            key={c._id}
+                            href={c.fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-full border border-border px-2.5 py-1 text-xs font-medium text-primary underline"
+                          >
+                            {c.title}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(p.payoutDetails?.bankName || p.payoutDetails?.accountNumber) && (
+                    <p className="mt-3 text-xs text-text-muted">
+                      Payout: {p.payoutDetails.bankName} · {p.payoutDetails.accountNumber} ({p.payoutDetails.accountHolderName})
+                    </p>
                   )}
                 </div>
                 <div className="flex shrink-0 gap-2">
