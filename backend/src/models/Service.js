@@ -62,6 +62,36 @@ const serviceSchema = new mongoose.Schema(
       },
     ],
 
+    // "What's Included" — the concrete things this service covers, shown as
+    // the feature grid on the detail page. Free-form per service rather than
+    // a fixed taxonomy, since what an electrician includes has nothing in
+    // common with what a tutor does.
+    inclusions: [
+      {
+        title: { type: String, trim: true },
+        description: { type: String, trim: true },
+        _id: false,
+      },
+    ],
+
+    // Questions the provider answers up front, so customers don't have to
+    // open a chat for the same five things every time.
+    faqs: [
+      {
+        question: { type: String, trim: true },
+        answer: { type: String, trim: true },
+        _id: false,
+      },
+    ],
+
+    // Extra areas this service covers beyond the provider's own
+    // workingArea.city — a Colombo electrician who also takes Dehiwala and
+    // Nugegoda jobs lists them here.
+    serviceAreas: {
+      type: [String],
+      default: [],
+    },
+
     isActive: {
       type: Boolean,
       default: true,

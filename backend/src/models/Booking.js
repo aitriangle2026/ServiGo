@@ -2,6 +2,16 @@ const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
   {
+    // Human-readable booking number, e.g. "SG20260828001" — something a
+    // customer can read out on the phone. The _id is the real key; this is
+    // for display and support only, which is why it isn't unique-indexed:
+    // two bookings created in the same millisecond could in principle share
+    // a sequence, and a cosmetic duplicate is better than a failed booking.
+    reference: {
+      type: String,
+      index: true,
+    },
+
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -56,6 +66,15 @@ const bookingSchema = new mongoose.Schema(
     totalPrice: {
       type: Number,
       required: true,
+    },
+
+    // How the customer intends to settle. Card is accepted by the schema so
+    // the field doesn't need migrating later, but no gateway is wired up —
+    // the UI offers cash only until one is.
+    paymentMethod: {
+      type: String,
+      enum: ["cash", "card"],
+      default: "cash",
     },
 
     status: {

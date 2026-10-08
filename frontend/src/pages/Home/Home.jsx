@@ -15,9 +15,12 @@ const Home = () => {
       <Navbar />
       <main>
         <HeroSection />
+        {/* "How it works" sits directly under the hero, as in the design —
+            it answers the first question a new visitor has before they're
+            asked to browse anything. */}
+        <HowItWorksSection />
         <CategoriesSection />
         <FeaturedServicesSection />
-        <HowItWorksSection />
         <TopProvidersSection />
         <TestimonialsSection />
         <FAQSection />

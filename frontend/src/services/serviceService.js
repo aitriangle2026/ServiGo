@@ -2,6 +2,15 @@ import axios from '@/api/axios';
 import { ENDPOINTS } from '@/api/endpoints';
 
 export const serviceService = {
+  // Which of the day's slots the provider is still free for. Derived on the
+  // server from existing bookings — see service.service.js.
+  getAvailability: async (id, date) => {
+    const { data } = await axios.get(`${ENDPOINTS.SERVICES.DETAILS(id)}/availability`, {
+      params: { date },
+    });
+    return data;
+  },
+
   getCategories: async () => {
     const { data } = await axios.get(ENDPOINTS.CATEGORIES.LIST);
     return data;

@@ -75,6 +75,20 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    // Addresses the customer books to. Kept on the user rather than copied
+    // into every Booking so "Home" can be corrected once and the label is
+    // reusable at checkout; the Booking still snapshots the address text at
+    // the time of booking, since a later edit here must not silently change
+    // where a provider was told to go.
+    addresses: [
+      {
+        label: { type: String, trim: true, default: "Home" },
+        addressLine: { type: String, trim: true, required: true },
+        city: { type: String, trim: true, default: "" },
+        isDefault: { type: Boolean, default: false },
+      },
+    ],
+
     // Customer's saved location, used to prioritize search results from
     // their own city/country. Optional — guests and users who haven't set
     // this yet just get unranked results.

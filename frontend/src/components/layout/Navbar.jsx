@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaBars, FaTimes, FaUserCircle } from 'react-icons/fa';
+import { FaBars, FaTimes, FaUserCircle, FaChevronDown } from 'react-icons/fa';
 import { NAV_LINKS, APP_NAME } from '@/utils/constants';
 import Button from '@/components/common/Button';
 import { useAuth } from '@/context/AuthContext';
@@ -32,31 +32,48 @@ const Navbar = () => {
       }`}
     >
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:h-20 lg:px-8">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-base font-bold text-white">
+        <Link to="/" className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-base font-bold text-white">
             S
           </span>
-          <span className="font-display text-xl font-extrabold tracking-tight text-secondary">
+          <span className="font-body text-xl font-bold tracking-tight text-secondary">
             {APP_NAME}
           </span>
         </Link>
 
-        <div className="hidden items-center gap-1 lg:flex">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              className="rounded-full px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-slate-100 hover:text-secondary"
-            >
-              {link.label}
-            </Link>
-          ))}
+        {/* The active link gets an underline rather than a pill — it sits
+            better under the editorial type and keeps the bar quiet. */}
+        <div className="hidden items-center gap-7 lg:flex">
+          {NAV_LINKS.map((link) => {
+            const isActive =
+              link.path === '/'
+                ? location.pathname === '/'
+                : location.pathname.startsWith(link.path.split('#')[0]) &&
+                  link.path.split('#')[0] !== '/';
+
+            return (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`relative py-1 text-sm transition-colors ${
+                  isActive
+                    ? 'font-semibold text-secondary'
+                    : 'font-medium text-text-muted hover:text-secondary'
+                }`}
+              >
+                {link.label}
+                {isActive && (
+                  <span className="absolute -bottom-0.5 left-0 right-0 h-0.5 rounded-full bg-secondary" />
+                )}
+              </Link>
+            );
+          })}
         </div>
 
         <div className="hidden items-center gap-3 lg:flex">
           <Link
             to="/provider/onboarding"
-            className="text-sm font-semibold text-secondary hover:text-primary"
+            className="rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-secondary transition-colors hover:border-primary hover:text-primary"
           >
             Become a Pro
           </Link>
@@ -72,9 +89,21 @@ const Navbar = () => {
                   else if (user?.role === 'admin') navigate('/admin/dashboard');
                   else navigate('/customer/dashboard');
                 }}
-                className="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm font-medium text-secondary hover:border-primary"
+                className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-surface-warm"
               >
-                <FaUserCircle className="text-lg" /> Account
+                {user?.profileImage ? (
+                  <img
+                    src={user.profileImage}
+                    alt=""
+                    className="h-9 w-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <FaUserCircle className="h-9 w-9 text-text-muted" />
+                )}
+                <span className="text-sm font-medium text-secondary">
+                  Hi, {user?.firstName || 'there'}
+                </span>
+                <FaChevronDown className="text-[10px] text-text-muted" />
               </button>
             </>
           ) : (

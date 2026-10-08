@@ -54,4 +54,44 @@ const updateUserStatus = async (req, res) => {
   }
 };
 
-module.exports = { updateProfile, getAllUsers, updateUserStatus };
+const listAddresses = async (req, res) => {
+  try {
+    const addresses = await userService.listAddresses(req.user._id);
+    res.status(200).json({ success: true, data: addresses });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const addAddress = async (req, res) => {
+  try {
+    const addresses = await userService.addAddress(req.user._id, req.body);
+    res.status(201).json({ success: true, message: "Address saved", data: addresses });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const updateAddress = async (req, res) => {
+  try {
+    const addresses = await userService.updateAddress(req.user._id, req.params.id, req.body);
+    res.status(200).json({ success: true, message: "Address updated", data: addresses });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const deleteAddress = async (req, res) => {
+  try {
+    const addresses = await userService.deleteAddress(req.user._id, req.params.id);
+    res.status(200).json({ success: true, message: "Address removed", data: addresses });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = {
+  listAddresses,
+  addAddress,
+  updateAddress,
+  deleteAddress, updateProfile, getAllUsers, updateUserStatus };

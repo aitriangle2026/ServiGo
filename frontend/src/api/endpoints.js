@@ -16,6 +16,8 @@ export const ENDPOINTS = {
     PROFILE: '/users/profile',
     UPDATE_PROFILE: '/users/profile',
     UPLOAD_AVATAR: '/users/avatar',
+    ADDRESSES: '/users/addresses',
+    ADDRESS: (id) => `/users/addresses/${id}`,
   },
  SERVICES: {
     LIST: '/services',
@@ -53,6 +55,8 @@ export const ENDPOINTS = {
     CUSTOMER: '/bookings/customer',
     PROVIDER: '/bookings/provider',
     UPDATE_STATUS: (id) => `/bookings/${id}/status`,
+    DETAILS: (id) => `/bookings/${id}`,
+    CANCEL: (id) => `/bookings/${id}/cancel`,
   },
 
   FAVORITES: {

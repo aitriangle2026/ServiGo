@@ -11,6 +11,7 @@ const {
 // optionalAuth: logged-in customers get results ranked by their saved
 // location; guests get the normal unranked list. Still a public route.
 router.get("/", optionalAuth, serviceController.getAllServices);
+router.get("/:id/availability", serviceController.getServiceAvailability);
 router.get("/:id", serviceController.getServiceById);
 
 router.post(

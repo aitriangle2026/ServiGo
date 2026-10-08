@@ -88,7 +88,7 @@ export default function InvoiceComposer({ conversationId, isOpen, onClose, onSen
                 containerClassName="flex-1"
               />
               <Input
-                label={index === 0 ? 'Amount (Rs.)' : undefined}
+                label={index === 0 ? 'Amount (LKR)' : undefined}
                 type="number"
                 min="0"
                 placeholder="0"

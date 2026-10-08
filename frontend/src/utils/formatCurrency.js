@@ -8,7 +8,7 @@ export const formatCurrency = (amount, options = {}) => {
   const { withSymbol = true } = options;
 
   if (amount === null || amount === undefined || Number.isNaN(amount)) {
-    return withSymbol ? 'Rs. —' : '—';
+    return withSymbol ? 'LKR —' : '—';
   }
 
   const formatted = new Intl.NumberFormat('en-LK', {
@@ -16,7 +16,9 @@ export const formatCurrency = (amount, options = {}) => {
     maximumFractionDigits: 2,
   }).format(amount);
 
-  return withSymbol ? `Rs. ${formatted}` : formatted;
+  // "LKR" rather than "Rs." — it's the ISO code, matches the designs, and
+  // reads unambiguously next to other currencies.
+  return withSymbol ? `LKR ${formatted}` : formatted;
 };
 
 export default formatCurrency;

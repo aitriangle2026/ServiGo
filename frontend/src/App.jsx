@@ -16,6 +16,7 @@ import MyJobRequests from '@/pages/Customer/MyJobRequests';
 import PostJobRequest from '@/pages/Customer/PostJobRequest';
 import JobRequestDetail from '@/pages/Customer/JobRequestDetail';
 import About from '@/pages/About/About';
+import HowItWorks from '@/pages/HowItWorks/HowItWorks';
 import ProviderDashboard from '@/pages/Provider/Dashboard';
 import ProviderServices from '@/pages/Provider/Services';
 import ProviderBookings from '@/pages/Provider/Bookings';
@@ -28,6 +29,8 @@ import ProviderVerification from '@/pages/Provider/Verification';
 import AdminDashboard from '@/pages/Admin/Dashboard';
 import AdminProviders from '@/pages/Admin/Providers';
 import ServiceDetail from '@/pages/Services/ServiceDetail';
+import BookingPage from '@/pages/Booking/BookingPage';
+import BookingConfirmation from '@/pages/Booking/BookingConfirmation';
 import AdminCategories from '@/pages/Admin/Categories';
 import AdminUsers from '@/pages/Admin/Users';
 import AdminBookings from '@/pages/Admin/Bookings';
@@ -74,9 +77,26 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/services" element={<Services />} />
       <Route path="/services/:id" element={<ServiceDetail />} />
+      <Route
+        path="/booking/:bookingId/confirmed"
+        element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <BookingConfirmation />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/book/:serviceId"
+        element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <BookingPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/providers/:id" element={<ProviderDetail />} />
       <Route path="/find-pros" element={<FindPros />} />
       <Route path="/about" element={<About />} />
+      <Route path="/how-it-works" element={<HowItWorks />} />
 
       {/* Auth */}
       <Route path="/login" element={<Login />} />

@@ -71,6 +71,39 @@ const providerProfileSchema = new mongoose.Schema(
       default: "",
     },
 
+    // One line in the provider's own words, shown as the pull-quote on their
+    // profile. Distinct from `bio`, which is the longer "About" paragraph.
+    tagline: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 140,
+    },
+
+    // Areas they'll travel to beyond workingArea.city. The radius alone
+    // can't express "I cover Colombo and Dehiwala but not Negombo".
+    serviceAreas: {
+      type: [String],
+      default: [],
+    },
+
+    // Optional short intro clip for the profile header.
+    introVideoUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    // Questions this provider answers up front, so customers don't open a
+    // chat for the same few things every time.
+    faqs: [
+      {
+        question: { type: String, trim: true },
+        answer: { type: String, trim: true },
+        _id: false,
+      },
+    ],
+
     experience: {
       type: Number,
       default: 0,

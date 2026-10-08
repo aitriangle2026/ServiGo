@@ -3,6 +3,24 @@ const Service = require("../models/Service");
 const ProviderProfile = require("../models/ProviderProfile");
 const notificationService = require("./notification.service");
 
+/**
+ * Builds the display reference: SG + YYYYMMDD + a 3-digit sequence counting
+ * that day's bookings. Read aloud easily and sortable by eye.
+ */
+const buildReference = async () => {
+  const now = new Date();
+  const stamp = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("");
+
+  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayCount = await Booking.countDocuments({ createdAt: { $gte: dayStart } });
+
+  return `SG${stamp}${String(todayCount + 1).padStart(3, "0")}`;
+};
+
 // Reads nicely inside a notification message ("on_the_way" -> "on the way").
 const humanizeStatus = (status) => status.replace(/_/g, " ");
 
@@ -15,6 +33,7 @@ const createBooking = async (customerId, bookingData) => {
   }
 
   const booking = await Booking.create({
+    reference: await buildReference(),
     customer: customerId,
     provider: service.provider,
     service: service._id,
@@ -22,6 +41,9 @@ const createBooking = async (customerId, bookingData) => {
     bookingTime: bookingData.bookingTime,
     address: bookingData.address,
     notes: bookingData.notes,
+    // Only "cash" is actually offered in the UI; anything else falls back
+    // rather than letting an unvalidated value through.
+    paymentMethod: bookingData.paymentMethod === "card" ? "card" : "cash",
     totalPrice: service.price,
   });
 
@@ -245,6 +267,47 @@ const cancelBooking = async (bookingId, customerId) => {
   return booking;
 };
 
+/**
+ * One booking, readable by the customer who made it, the provider assigned
+ * to it, or an admin. Anyone else gets "not found" rather than a 403, so the
+ * endpoint can't be used to probe which booking ids exist.
+ */
+const getBookingById = async (bookingId, user) => {
+  const booking = await Booking.findById(bookingId)
+    .populate("customer", "firstName lastName email phone")
+    .populate("service", "title price images portfolioImages duration category")
+    .populate({
+      path: "provider",
+      populate: [
+        { path: "user", select: "firstName lastName email phone" },
+        { path: "categories", select: "name" },
+      ],
+    });
+
+  if (!booking) throw new Error("Booking not found");
+
+  const isCustomer = String(booking.customer?._id) === String(user._id);
+  const isAdmin = user.role === "admin";
+
+  let isProvider = false;
+  if (user.role === "provider") {
+    const profile = await ProviderProfile.findOne({ user: user._id }).select("_id");
+    isProvider = profile && String(profile._id) === String(booking.provider?._id);
+  }
+
+  if (!isCustomer && !isProvider && !isAdmin) {
+    throw new Error("Booking not found");
+  }
+
+  // Track record for the provider card on the confirmation screen.
+  const completedJobs = await Booking.countDocuments({
+    provider: booking.provider?._id,
+    status: "completed",
+  });
+
+  return { ...booking.toObject(), providerStats: { completedJobs } };
+};
+
 const getAllBookings = async (query) => {
   const { status, page = 1, limit = 20 } = query;
 
@@ -279,5 +342,6 @@ module.exports = {
   getCustomerBookings,
   updateBookingStatus,
   cancelBooking,
+  getBookingById,
   getAllBookings,
 };

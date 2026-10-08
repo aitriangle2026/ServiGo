@@ -1,4 +1,7 @@
 const ProviderProfile = require("../models/ProviderProfile");
+const Service = require("../models/Service");
+const Booking = require("../models/Booking");
+const Review = require("../models/Review");
 const User = require("../models/User");
 const { sortByLocationPriority } = require("../utils/locationPriority");
 const { countryEquals, sameLocation } = require("../utils/countryFilter");
@@ -166,11 +169,63 @@ const getAllProviders = async (query, currentUser) => {
 
 const getProviderById = async (id) => {
   const provider = await ProviderProfile.findById(id)
-    .populate('user', 'firstName lastName email phone')
+    .populate('user', 'firstName lastName email phone profileImage')
     .populate('categories', 'name');
 
   if (!provider) throw new Error('Provider not found');
-  return provider;
+
+  // Everything the profile page shows about track record, gathered in one
+  // round trip. Counted live rather than denormalised onto the document —
+  // these change with every booking and review, and a stale "120+ jobs" is
+  // worse than one extra query.
+  const [services, bookingCounts, ratingBuckets] = await Promise.all([
+    Service.find({ provider: provider._id, isActive: true })
+      .populate('category', 'name')
+      .sort('-averageRating')
+      .limit(12),
+
+    Booking.aggregate([
+      { $match: { provider: provider._id } },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+    ]),
+
+    Review.aggregate([
+      { $match: { provider: provider._id } },
+      { $group: { _id: '$rating', count: { $sum: 1 } } },
+    ]),
+  ]);
+
+  const byStatus = Object.fromEntries(bookingCounts.map((row) => [row._id, row.count]));
+  const completed = byStatus.completed || 0;
+  const cancelled = (byStatus.cancelled || 0) + (byStatus.rejected || 0);
+  const decided = completed + cancelled;
+
+  // Honest proxy for reliability: of the jobs that reached an outcome, how
+  // many were seen through. NOT punctuality — nothing records promised vs
+  // actual arrival time, so a real "on-time rate" isn't computable yet.
+  const completionRate = decided > 0 ? Math.round((completed / decided) * 100) : null;
+
+  const totalRatings = ratingBuckets.reduce((sum, row) => sum + row.count, 0);
+  const ratingDistribution = [5, 4, 3, 2, 1].map((stars) => {
+    const count = ratingBuckets.find((row) => Math.round(row._id) === stars)?.count || 0;
+    return {
+      stars,
+      count,
+      percent: totalRatings > 0 ? Math.round((count / totalRatings) * 100) : 0,
+    };
+  });
+
+  return {
+    ...provider.toObject(),
+    services,
+    stats: {
+      completedJobs: completed,
+      activeBookings: (byStatus.pending || 0) + (byStatus.accepted || 0) + (byStatus.on_the_way || 0),
+      completionRate,
+      totalServices: services.length,
+    },
+    ratingDistribution,
+  };
 };
 
 const getPendingProviders = async () => {

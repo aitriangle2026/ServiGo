@@ -3,19 +3,40 @@ import Modal from '@/components/common/Modal';
 import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
 import { bookingService } from '@/services/bookingService';
+import { formatCurrency } from '@/utils/formatCurrency';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-export default function BookingForm({ service, isOpen, onClose }) {
+/**
+ * @param {{
+ *   service: object, isOpen?: boolean, onClose: () => void,
+ *   initialDate?: string, initialTime?: string, onSuccess?: () => void,
+ * }} props `initialDate`/`initialTime` come from the detail page's slot
+ *   picker. When a slot was chosen there, it is shown back as a summary
+ *   rather than re-asked: the slot label ("09:00 AM") is also what the
+ *   availability endpoint matches on, and a native time input would submit
+ *   "09:00" instead, quietly breaking the booked-slot check.
+ */
+export default function BookingForm({
+  service,
+  isOpen = true,
+  onClose,
+  initialDate = '',
+  initialTime = '',
+  onSuccess,
+}) {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    bookingDate: '',
-    bookingTime: '',
+    bookingDate: initialDate,
+    bookingTime: initialTime,
     address: '',
     notes: '',
   });
+
+  // A slot picked upstream is fixed here; only address and notes are asked.
+  const hasPickedSlot = Boolean(initialDate && initialTime);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -45,6 +66,7 @@ export default function BookingForm({ service, isOpen, onClose }) {
         notes: form.notes,
       });
       setSuccess(true);
+      onSuccess?.();
     } catch (err) {
       setError(err?.response?.data?.message || 'Could not create booking.');
     } finally {
@@ -53,7 +75,7 @@ export default function BookingForm({ service, isOpen, onClose }) {
   };
 
   const handleClose = () => {
-    setForm({ bookingDate: '', bookingTime: '', address: '', notes: '' });
+    setForm({ bookingDate: initialDate, bookingTime: initialTime, address: '', notes: '' });
     setError('');
     setSuccess(false);
     onClose();
@@ -76,20 +98,40 @@ export default function BookingForm({ service, isOpen, onClose }) {
             <p className="rounded-xl border border-danger/20 bg-danger-light p-3 text-sm text-danger">{error}</p>
           )}
 
-          <Input
-            label="Date"
-            type="date"
-            min={new Date().toISOString().split('T')[0]}
-            value={form.bookingDate}
-            onChange={(e) => setForm((f) => ({ ...f, bookingDate: e.target.value }))}
-          />
+          {hasPickedSlot ? (
+            <div className="rounded-xl bg-surface-warm px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                Your slot
+              </p>
+              <p className="mt-1 text-sm font-semibold text-secondary">
+                {new Date(`${form.bookingDate}T00:00:00`).toLocaleDateString('en-LK', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+                {' at '}
+                {form.bookingTime}
+              </p>
+            </div>
+          ) : (
+            <>
+              <Input
+                label="Date"
+                type="date"
+                min={new Date().toISOString().split('T')[0]}
+                value={form.bookingDate}
+                onChange={(e) => setForm((f) => ({ ...f, bookingDate: e.target.value }))}
+              />
 
-          <Input
-            label="Time"
-            type="time"
-            value={form.bookingTime}
-            onChange={(e) => setForm((f) => ({ ...f, bookingTime: e.target.value }))}
-          />
+              <Input
+                label="Time"
+                type="time"
+                value={form.bookingTime}
+                onChange={(e) => setForm((f) => ({ ...f, bookingTime: e.target.value }))}
+              />
+            </>
+          )}
 
           <Input
             label="Address"
@@ -110,7 +152,7 @@ export default function BookingForm({ service, isOpen, onClose }) {
           </div>
 
           <div className="rounded-xl border border-border bg-slate-50 p-3 text-sm text-secondary">
-            Total: <span className="font-bold">Rs. {service?.price?.toLocaleString()}</span>
+            Total: <span className="font-bold">{formatCurrency(service?.price)}</span>
           </div>
 
           <Button type="submit" variant="primary" fullWidth isLoading={isSaving}>

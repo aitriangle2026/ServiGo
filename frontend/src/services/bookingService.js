@@ -7,6 +7,16 @@ export const bookingService = {
     return data;
   },
 
+  getById: async (id) => {
+    const { data } = await axios.get(ENDPOINTS.BOOKINGS.DETAILS(id));
+    return data;
+  },
+
+  cancel: async (id) => {
+    const { data } = await axios.put(ENDPOINTS.BOOKINGS.CANCEL(id));
+    return data;
+  },
+
   getMyBookings: async () => {
     // Backend returns { success, count, data: [...] }
     const { data } = await axios.get(ENDPOINTS.BOOKINGS.CUSTOMER);
