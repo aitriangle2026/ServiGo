@@ -106,6 +106,12 @@ export const providerService = {
     return data;
   },
 
+  /** Every paid job as a transaction: cash collected, or an online payment held / released. */
+  getEarnings: async () => {
+    const { data } = await axios.get(ENDPOINTS.PROVIDERS.EARNINGS);
+    return data;
+  },
+
   updatePayoutDetails: async (payoutDetails) => {
     const { data } = await axios.put(ENDPOINTS.PROVIDERS.PAYOUT_DETAILS, payoutDetails);
     return data;

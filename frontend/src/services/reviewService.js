@@ -6,6 +6,12 @@ export const reviewService = {
     const { data } = await axios.get(ENDPOINTS.REVIEWS.BY_PROVIDER(providerId));
     return data;
   },
+  /** Provider: their own reviews, each with its booking (date, time, address). */
+  getMine: async () => {
+    const { data } = await axios.get(ENDPOINTS.REVIEWS.MINE);
+    return data;
+  },
+
   getByService: async (serviceId) => {
     const { data } = await axios.get(ENDPOINTS.REVIEWS.BY_SERVICE(serviceId));
     return data;

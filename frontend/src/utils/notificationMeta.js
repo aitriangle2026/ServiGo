@@ -3,6 +3,7 @@ import {
   FaCalendarCheck,
   FaCheckCircle,
   FaClipboardList,
+  FaCommentDots,
   FaExclamationTriangle,
   FaFlag,
   FaMoneyBillWave,
@@ -70,6 +71,9 @@ const META = {
   new_report: { icon: FaFlag, tone: 'danger' },
   support_request: { icon: FaBell, tone: 'primary' },
   support_request_reviewed: { icon: FaBell, tone: 'primary' },
+
+  // Messages
+  new_message: { icon: FaCommentDots, tone: 'primary' },
 
   system: { icon: FaBell, tone: 'neutral' },
 };

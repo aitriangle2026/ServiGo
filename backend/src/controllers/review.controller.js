@@ -20,6 +20,15 @@ const createReview = async (req, res) => {
   }
 };
 
+const getMyProviderReviews = async (req, res) => {
+  try {
+    const reviews = await reviewService.getMyProviderReviews(req.user._id);
+    res.status(200).json({ success: true, count: reviews.length, data: reviews });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 const getProviderReviews = async (req, res) => {
   try {
     const reviews = await reviewService.getProviderReviews(req.params.providerId);
@@ -92,6 +101,7 @@ const deleteReview = async (req, res) => {
 };
 
 module.exports = {
+  getMyProviderReviews,
   createReview,
   getProviderReviews,
   getServiceReviews,

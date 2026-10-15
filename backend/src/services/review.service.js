@@ -131,6 +131,22 @@ const getProviderReviews = async (providerId) => {
     .sort("-createdAt");
 };
 
+/**
+ * The logged-in provider's own reviews, with the booking each came from.
+ * Separate from the public getProviderReviews on purpose: the booking carries
+ * the customer's address, which must never appear on a public profile.
+ */
+const getMyProviderReviews = async (userId) => {
+  const provider = await ProviderProfile.findOne({ user: userId }).select("_id");
+  if (!provider) throw new Error("Provider profile not found");
+
+  return Review.find({ provider: provider._id })
+    .populate("customer", "firstName lastName profileImage")
+    .populate({ path: "service", select: "title category", populate: { path: "category", select: "name" } })
+    .populate("booking", "reference bookingDate bookingTime address")
+    .sort("-createdAt");
+};
+
 const getServiceReviews = async (serviceId) => {
   return await Review.find({
     service: serviceId,
@@ -237,6 +253,7 @@ const deleteReview = async (reviewId, userId) => {
 module.exports = {
   createReview,
   getProviderReviews,
+  getMyProviderReviews,
   getServiceReviews,
   updateReview,
   deleteReview,

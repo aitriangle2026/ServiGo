@@ -8,9 +8,10 @@ const PLACEHOLDER = '/images/service-placeholder.jpg';
  * Profile header: avatar, name, headline stats and the provider's own
  * one-line pitch.
  *
- * @param {{ provider: object, name: string, role: string }} props
+ * @param {{ provider: object, name: string, role: string, action?: React.ReactNode }} props
+ *   `action` sits beside the name (the Save button).
  */
-export default function ProviderHero({ provider, name, role }) {
+export default function ProviderHero({ provider, name, role, action = null }) {
   const rating = Number(provider?.averageRating || 0);
   const reviews = Number(provider?.totalReviews || 0);
   const stats = provider?.stats || {};
@@ -84,9 +85,12 @@ export default function ProviderHero({ provider, name, role }) {
                 </span>
               )}
 
-              <h1 className="mt-2.5 font-display text-[2.1rem] font-medium leading-tight text-secondary sm:text-[2.6rem]">
-                {name}
-              </h1>
+              <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <h1 className="font-display text-[2.1rem] font-medium leading-tight text-secondary sm:text-[2.6rem]">
+                  {name}
+                </h1>
+                {action}
+              </div>
 
               <p className="mt-2 flex flex-wrap items-center gap-x-1.5 text-[13px]">
                 <FaStar className="text-[13px] text-accent" />

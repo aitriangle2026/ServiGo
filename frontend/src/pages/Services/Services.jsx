@@ -21,6 +21,7 @@ import CategoryTabs from './sections/CategoryTabs';
 import { CATEGORY_GROUPS } from './categoryGroups';
 import FeaturedPromos from './sections/FeaturedPromos';
 import ServiceGridCard from '@/components/cards/ServiceGridCard';
+import useFavorites from '@/hooks/useFavorites';
 import FilterSidebar, { ALL_CITIES } from '@/components/common/FilterSidebar';
 import ServiceCardSkeleton from '@/components/common/ServiceCardSkeleton';
 import EmptyState from '@/components/common/EmptyState';
@@ -68,6 +69,7 @@ const DEFAULT_FILTERS = {
 };
 
 const Services = () => {
+  const favorites = useFavorites();
   const [searchParams] = useSearchParams();
 
   const [query, setQuery] = useState(searchParams.get('q') || '');
@@ -359,6 +361,8 @@ const Services = () => {
                         service={service}
                         index={index}
                         view={view}
+                        isFavorite={favorites.isServiceFavorite(service._id || service.id)}
+                        onToggleFavorite={favorites.canFavorite ? favorites.toggleService : undefined}
                       />
                     ))}
                   </div>

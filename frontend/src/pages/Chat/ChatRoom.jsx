@@ -78,6 +78,25 @@ export default function ChatRoom() {
     };
   }, [socket, conversationId]);
 
+  // Tells the server this chat is on screen, so new messages here don't also
+  // raise a "New Message" notification. A background tab doesn't count as
+  // viewing; a reconnect re-announces it.
+  useEffect(() => {
+    if (!socket || !conversationId) return undefined;
+
+    const announce = () =>
+      socket.emit(document.visibilityState === 'visible' ? 'chat:viewing' : 'chat:left', conversationId);
+
+    announce();
+    socket.on('connect', announce);
+    document.addEventListener('visibilitychange', announce);
+    return () => {
+      socket.off('connect', announce);
+      document.removeEventListener('visibilitychange', announce);
+      socket.emit('chat:left');
+    };
+  }, [socket, conversationId]);
+
   const appendOwnMessage = (message) => setMessages((prev) => [...prev, message]);
 
   const handleSendText = async (e) => {

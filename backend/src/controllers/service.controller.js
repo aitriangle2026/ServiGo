@@ -45,6 +45,15 @@ const getAllServices = async (req, res) => {
   }
 };
 
+const getMyServices = async (req, res) => {
+  try {
+    const data = await serviceService.getMyServices(req.user._id);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 const getServiceById = async (req, res) => {
   try {
     const service = await serviceService.getServiceById(req.params.id);
@@ -192,6 +201,7 @@ const getServiceAvailability = async (req, res) => {
 };
 
 module.exports = {
+  getMyServices,
   getServiceAvailability,
   createService,
   getAllServices,

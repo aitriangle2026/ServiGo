@@ -25,6 +25,15 @@ const protect = async (req, res, next) => {
       });
     }
 
+    // A deactivated or suspended account loses access immediately, not just
+    // at its next login.
+    if (user.isActive === false) {
+      return res.status(401).json({
+        success: false,
+        message: "This account has been deactivated",
+      });
+    }
+
     req.user = user;
 
     next();

@@ -37,6 +37,52 @@ export const jobRequestService = {
     return data;
   },
 
+  // ── Quotes (proposals) ──────────────────────────────────────────────
+  /** Provider: every request they can act on, each with a `stage` and `myProposal`. */
+  getPipeline: async () => {
+    const { data } = await axios.get(ENDPOINTS.JOB_REQUESTS.PIPELINE);
+    return data;
+  },
+
+  /** Provider: send a quote, or edit the one still pending. */
+  submitProposal: async (id, { amount, message, proposedDate, proposedTime }) => {
+    const { data } = await axios.post(ENDPOINTS.JOB_REQUESTS.PROPOSALS(id), { amount, message, proposedDate, proposedTime });
+    return data;
+  },
+
+  withdrawProposal: async (proposalId) => {
+    const { data } = await axios.put(ENDPOINTS.PROPOSALS.WITHDRAW(proposalId));
+    return data;
+  },
+
+  /** Provider: "Not interested" — hides the request for them only. */
+  dismiss: async (id) => {
+    const { data } = await axios.put(ENDPOINTS.JOB_REQUESTS.DISMISS(id));
+    return data;
+  },
+
+  undismiss: async (id) => {
+    const { data } = await axios.put(ENDPOINTS.JOB_REQUESTS.UNDISMISS(id));
+    return data;
+  },
+
+  /** Customer: the quotes on one of their requests. */
+  getProposals: async (id) => {
+    const { data } = await axios.get(ENDPOINTS.JOB_REQUESTS.PROPOSALS(id));
+    return data;
+  },
+
+  /** Customer: accept a quote — returns { proposal, booking }. */
+  acceptProposal: async (proposalId) => {
+    const { data } = await axios.put(ENDPOINTS.PROPOSALS.ACCEPT(proposalId));
+    return data;
+  },
+
+  rejectProposal: async (proposalId) => {
+    const { data } = await axios.put(ENDPOINTS.PROPOSALS.REJECT(proposalId));
+    return data;
+  },
+
   cancel: async (id) => {
     const { data } = await axios.put(ENDPOINTS.JOB_REQUESTS.CANCEL(id));
     return data;

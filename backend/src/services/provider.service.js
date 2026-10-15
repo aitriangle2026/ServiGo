@@ -2,11 +2,34 @@ const ProviderProfile = require("../models/ProviderProfile");
 const Service = require("../models/Service");
 const Booking = require("../models/Booking");
 const Review = require("../models/Review");
+const Invoice = require("../models/Invoice");
 const User = require("../models/User");
 const { sortByLocationPriority } = require("../utils/locationPriority");
 const { countryEquals, sameLocation } = require("../utils/countryFilter");
 const { calculateVerificationScore, PASS_THRESHOLD } = require("../utils/verificationScore");
 const notificationService = require("./notification.service");
+
+// What a provider may set on their own profile. Everything else on the model —
+// isVerified, verificationStatus/score, averageRating, totalReviews, payout
+// details (own endpoint), images (upload endpoints) — is written only by the
+// server or an admin. Without this list a provider could PUT
+// { isVerified: true, averageRating: 5 } and it would be saved.
+const EDITABLE_FIELDS = [
+  "bio",
+  "tagline",
+  "experience",
+  "categories",
+  "workingArea",
+  "serviceAreas",
+  "introVideoUrl",
+  "faqs",
+  "documentType",
+  "nicNumber",
+  "isAvailable",
+];
+
+const pickEditable = (data = {}) =>
+  Object.fromEntries(EDITABLE_FIELDS.filter((key) => data[key] !== undefined).map((key) => [key, data[key]]));
 
 const createProfile = async (userId, profileData) => {
   const existingProfile = await ProviderProfile.findOne({
@@ -18,7 +41,7 @@ const createProfile = async (userId, profileData) => {
   }
 
   const profile = await ProviderProfile.create({
-    ...profileData,
+    ...pickEditable(profileData),
     user: userId,
   });
 
@@ -42,7 +65,7 @@ const getMyProfile = async (userId) => {
 const updateProfile = async (userId, profileData) => {
   const profile = await ProviderProfile.findOneAndUpdate(
     { user: userId },
-    profileData,
+    pickEditable(profileData),
     {
       new: true,
       runValidators: true,
@@ -360,6 +383,75 @@ const updatePayoutDetails = async (userId, payoutDetails) => {
   return profile;
 };
 
+/**
+ * Every booking that has earned the provider money, as one list.
+ *
+ * Two ways money arrives:
+ *  - cash: the customer pays the provider at the job. A completed cash
+ *    booking is money in hand — status "collected", no commission.
+ *  - escrow: the customer paid ServiGo through an approved invoice. ServiGo
+ *    holds it ("held") until an admin releases the payout ("released"); the
+ *    provider receives providerPayoutAmount, i.e. after commission.
+ */
+const getEarnings = async (userId) => {
+  const profile = await ProviderProfile.findOne({ user: userId }).select("_id");
+  if (!profile) throw new Error("Provider profile not found");
+
+  const [bookings, invoices] = await Promise.all([
+    Booking.find({ provider: profile._id })
+      .populate("customer", "firstName lastName")
+      .populate({ path: "service", select: "title category", populate: { path: "category", select: "name" } })
+      .lean(),
+    Invoice.find({ provider: profile._id, status: { $in: ["paid", "payout_released"] } })
+      .populate("service", "title")
+      .lean(),
+  ]);
+
+  const invoiceByBooking = new Map(invoices.filter((i) => i.booking).map((i) => [String(i.booking), i]));
+
+  const transactions = [];
+  bookings.forEach((booking) => {
+    const base = {
+      bookingId: booking._id,
+      reference: booking.reference || null,
+      date: booking.bookingDate || booking.createdAt,
+      service: booking.service?.title || "Custom job",
+      category: booking.service?.category?.name || "Custom jobs",
+      customer: `${booking.customer?.firstName || ""} ${booking.customer?.lastName || ""}`.trim() || "Customer",
+      bookingStatus: booking.status,
+    };
+
+    const invoice = invoiceByBooking.get(String(booking._id));
+    if (invoice) {
+      transactions.push({
+        ...base,
+        service: booking.service?.title || invoice.service?.title || "Custom job",
+        kind: "escrow",
+        gross: invoice.subtotal,
+        commission: invoice.commissionAmount || 0,
+        amount: invoice.providerPayoutAmount ?? invoice.subtotal,
+        status: invoice.status === "payout_released" ? "released" : "held",
+        paidAt: invoice.paidAt,
+        releasedAt: invoice.releasedAt,
+      });
+    } else if (booking.status === "completed" && !booking.invoice) {
+      transactions.push({
+        ...base,
+        kind: "cash",
+        gross: booking.totalPrice,
+        commission: 0,
+        amount: booking.totalPrice,
+        status: "collected",
+        paidAt: null,
+        releasedAt: null,
+      });
+    }
+  });
+
+  transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return transactions;
+};
+
 const getVerificationScore = async (userId) => {
   const profile = await ProviderProfile.findOne({ user: userId }).populate("categories", "name");
   if (!profile) throw new Error("Provider profile not found");
@@ -409,6 +501,7 @@ module.exports = {
   addCertificate,
   removeCertificate,
   updatePayoutDetails,
+  getEarnings,
   getVerificationScore,
   submitForReview,
 };

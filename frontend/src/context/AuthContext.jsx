@@ -89,6 +89,17 @@ export function AuthProvider({ children }) {
     setUser(updatedUser);
   }, []);
 
+  // After a password change the server rotates the tokens; store the new
+  // pair so this session stays signed in.
+  const replaceTokens = useCallback(
+    ({ token, refreshToken }) => persistSession({ accessToken: token, refreshToken }),
+    [persistSession]
+  );
+
+  // Ends the session locally without calling /logout — for when the server
+  // has already invalidated it (e.g. the account was just deactivated).
+  const endSession = clearSession;
+
   const value = {
     user,
     isAuthenticated: !!user,
@@ -98,6 +109,8 @@ export function AuthProvider({ children }) {
     googleLogin,
     logout,
     updateUser,
+    replaceTokens,
+    endSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

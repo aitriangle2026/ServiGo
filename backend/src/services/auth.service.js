@@ -47,6 +47,13 @@ const login = async ({ email, password }) => {
     throw new Error("Invalid email or password");
   }
 
+  // Checked only after the password, so this message can't be used to find
+  // out which emails have accounts. Covers both admin suspension and a
+  // customer deactivating their own account.
+  if (user.isActive === false) {
+    throw new Error("This account has been deactivated. Contact support to restore it.");
+  }
+
   user.lastLogin = new Date();
 
   const token = generateToken(user);
@@ -80,7 +87,7 @@ const refreshAccessToken = async (refreshToken) => {
 
   const user = await User.findById(decoded.id).select("+refreshToken");
 
-  if (!user || user.refreshToken !== refreshToken) {
+  if (!user || user.refreshToken !== refreshToken || user.isActive === false) {
     throw new Error("Invalid refresh token");
   }
 
@@ -100,9 +107,42 @@ const logout = async (userId) => {
   await User.findByIdAndUpdate(userId, { refreshToken: null });
 };
 
+/**
+ * Logged-in password change. Clearing the refresh token signs out every
+ * other session once its short-lived access token expires; the caller gets
+ * fresh tokens so this session carries on.
+ */
+const changePassword = async (userId, { currentPassword, newPassword } = {}) => {
+  if (!currentPassword || !newPassword) {
+    throw new Error("Enter your current and new password");
+  }
+  if (String(newPassword).length < 6) {
+    throw new Error("New password must be at least 6 characters");
+  }
+  if (currentPassword === newPassword) {
+    throw new Error("New password must be different from the current one");
+  }
+
+  const user = await User.findById(userId).select("+password");
+  if (!user) throw new Error("User not found");
+
+  if (!(await user.comparePassword(currentPassword))) {
+    throw new Error("Current password is incorrect");
+  }
+
+  user.password = newPassword; // hashed by the pre-save hook
+  const token = generateToken(user);
+  const refreshToken = generateRefreshToken(user);
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  return { token, refreshToken };
+};
+
 module.exports = {
   register,
   login,
   refreshAccessToken,
   logout,
+  changePassword,
 };

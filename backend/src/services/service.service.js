@@ -5,6 +5,28 @@ const { countryEquals, sameLocation } = require("../utils/countryFilter");
 const { sortByLocationPriority } = require("../utils/locationPriority");
 const notificationService = require("./notification.service");
 
+// What a provider may set on their own service. Ratings and review counts
+// come from reviews, `provider` from the session, images from the upload
+// endpoints. Without this list a provider could PUT { averageRating: 5 } or
+// reassign a service to someone else's profile.
+const EDITABLE_FIELDS = [
+  "title",
+  "description",
+  "workDetails",
+  "duration",
+  "tags",
+  "price",
+  "priceType",
+  "category",
+  "inclusions",
+  "faqs",
+  "serviceAreas",
+  "isActive",
+];
+
+const pickEditable = (data = {}) =>
+  Object.fromEntries(EDITABLE_FIELDS.filter((key) => data[key] !== undefined).map((key) => [key, data[key]]));
+
 const createService = async (userId, serviceData) => {
   const provider = await ProviderProfile.findOne({ user: userId });
 
@@ -12,14 +34,9 @@ const createService = async (userId, serviceData) => {
     throw new Error("Provider profile not found");
   }
 
-  const { workDetails, duration, tags, ...rest } = serviceData;
-
   const service = await Service.create({
-    ...rest,
+    ...pickEditable(serviceData),
     provider: provider._id,
-    ...(workDetails !== undefined ? { workDetails } : {}),
-    ...(duration !== undefined ? { duration } : {}),
-    ...(tags !== undefined ? { tags } : {}),
   });
 
   await notificationService.notifyAdmins({
@@ -271,20 +288,7 @@ const updateService = async (serviceId, userId, serviceData) => {
     throw new Error("Provider profile not found");
   }
 
-  const { workDetails, duration, tags, ...rest } = serviceData;
-  const updateData = { ...rest };
-
-  if (workDetails !== undefined) {
-    updateData.workDetails = workDetails;
-  }
-
-  if (duration !== undefined) {
-    updateData.duration = duration;
-  }
-
-  if (tags !== undefined) {
-    updateData.tags = tags;
-  }
+  const updateData = pickEditable(serviceData);
 
   const service = await Service.findOneAndUpdate(
     {
@@ -294,6 +298,7 @@ const updateService = async (serviceId, userId, serviceData) => {
     updateData,
     {
       returnDocument: "after",
+      runValidators: true,
     }
   )
     .populate("category", "name")
@@ -319,16 +324,55 @@ const deleteService = async (serviceId, userId) => {
     throw new Error("Provider profile not found");
   }
 
-  const service = await Service.findOneAndDelete({
-    _id: serviceId,
-    provider: provider._id,
-  });
-
+  const service = await Service.findOne({ _id: serviceId, provider: provider._id });
   if (!service) {
     throw new Error("Service not found");
   }
 
+  // Bookings point at their service for title, photos and price. Deleting a
+  // booked service would turn those into "Custom job" for both sides, so a
+  // service with history can only be switched off.
+  const bookings = await Booking.countDocuments({ service: service._id });
+  if (bookings > 0) {
+    throw new Error(
+      `This service has ${bookings} booking${bookings === 1 ? "" : "s"}. Set it to Inactive instead — that hides it from customers and keeps the booking history intact.`
+    );
+  }
+
+  await service.deleteOne();
   return service;
+};
+
+/**
+ * The provider's own services, inactive ones included (the public search
+ * hides those), each with its booking counts.
+ */
+const getMyServices = async (userId) => {
+  const provider = await ProviderProfile.findOne({ user: userId }).select("_id");
+  if (!provider) throw new Error("Provider profile not found");
+
+  const services = await Service.find({ provider: provider._id })
+    .populate("category", "name")
+    .sort("-createdAt")
+    .lean();
+
+  const counts = await Booking.aggregate([
+    { $match: { service: { $in: services.map((s) => s._id) } } },
+    {
+      $group: {
+        _id: "$service",
+        total: { $sum: { $cond: [{ $in: ["$status", ["cancelled", "rejected"]] }, 0, 1] } },
+        completed: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
+      },
+    },
+  ]);
+  const countMap = new Map(counts.map((c) => [String(c._id), c]));
+
+  return services.map((s) => ({
+    ...s,
+    bookingCount: countMap.get(String(s._id))?.total || 0,
+    completedCount: countMap.get(String(s._id))?.completed || 0,
+  }));
 };
 
 const uploadServiceImages = async (serviceId, userId, imageUrls) => {
@@ -394,6 +438,7 @@ module.exports = {
   getAllServices,
   getServiceById,
   getServiceAvailability,
+  getMyServices,
   TIME_SLOTS,
   updateService,
   deleteService,

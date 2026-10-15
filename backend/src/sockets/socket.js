@@ -83,10 +83,29 @@ const initializeSocket = (server) => {
       });
     });
 
+    // The chat page reports which conversation it has open, so a new message
+    // there doesn't also raise a notification (see isViewingConversation).
+    socket.on("chat:viewing", (conversationId) => {
+      socket.data.viewingConversation = conversationId ? String(conversationId) : null;
+    });
+    socket.on("chat:left", () => {
+      socket.data.viewingConversation = null;
+    });
+
     socket.on("disconnect", () => {
       console.log("🔴 User Disconnected:", socket.id);
     });
   });
+};
+
+/**
+ * Whether any of this user's open tabs is showing that conversation right now.
+ * False when sockets aren't initialised — erring towards notifying.
+ */
+const isViewingConversation = async (userId, conversationId) => {
+  if (!io) return false;
+  const sockets = await io.in(String(userId)).fetchSockets();
+  return sockets.some((s) => s.data.viewingConversation === String(conversationId));
 };
 
 const getIO = () => {
@@ -100,4 +119,5 @@ const getIO = () => {
 module.exports = {
   initializeSocket,
   getIO,
+  isViewingConversation,
 };

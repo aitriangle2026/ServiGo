@@ -256,6 +256,15 @@ const updatePayoutDetails = async (req, res) => {
   }
 };
 
+const getEarnings = async (req, res) => {
+  try {
+    const data = await providerService.getEarnings(req.user._id);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 const getVerificationScore = async (req, res) => {
   try {
     const { profile, score } = await providerService.getVerificationScore(req.user._id);
@@ -279,6 +288,7 @@ const submitForReview = async (req, res) => {
 };
 
 module.exports = {
+  getEarnings,
   createProfile,
   getMyProfile,
   updateProfile,

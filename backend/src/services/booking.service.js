@@ -32,6 +32,12 @@ const createBooking = async (customerId, bookingData) => {
     throw new Error("Service not found");
   }
 
+  // Inactive services are hidden from search, but the listing URL still
+  // works — so the check has to live here too.
+  if (service.isActive === false) {
+    throw new Error("This service isn't taking bookings right now");
+  }
+
   const booking = await Booking.create({
     reference: await buildReference(),
     customer: customerId,
@@ -95,10 +101,20 @@ const getProviderBookings = async (userId) => {
   return await Booking.find({
     provider: provider._id,
   })
-    .populate("customer", "firstName lastName email phone")
-    .populate("service", "title price")
+    .populate("customer", "firstName lastName email phone profileImage")
+    .populate({
+      path: "service",
+      select: "title price images category",
+      populate: { path: "category", select: "name" },
+    })
     .sort("-createdAt");
 };
+
+// What a customer may see of the provider they booked. The profile also holds
+// NIC numbers, ID scans, a selfie and bank details — none of which belong in
+// a customer's booking list.
+const PUBLIC_PROVIDER_FIELDS =
+  "user profileImage bio tagline experience isVerified isAvailable averageRating totalReviews";
 
 const getCustomerBookings = async (userId) => {
   return await Booking.find({
@@ -106,12 +122,19 @@ const getCustomerBookings = async (userId) => {
   })
     .populate({
       path: "provider",
+      select: PUBLIC_PROVIDER_FIELDS,
       populate: {
         path: "user",
-        select: "firstName lastName email phone",
+        select: "firstName lastName email phone profileImage",
       },
     })
-    .populate("service", "title price images")
+    // category feeds the dashboard's "Recommended for you" and the provider's
+    // trade line on My Bookings.
+    .populate({
+      path: "service",
+      select: "title price images category",
+      populate: { path: "category", select: "name" },
+    })
     .sort("-createdAt");
 };
 
@@ -268,6 +291,91 @@ const cancelBooking = async (bookingId, customerId) => {
 };
 
 /**
+ * Customer moves a booking to another date/slot. Allowed on the same terms
+ * as cancelling. The provider agreed to the old time, not the new one, so an
+ * accepted booking goes back to pending for them to confirm again.
+ *
+ * @param {{ bookingDate: string, bookingTime: string }} change bookingDate is
+ *   "YYYY-MM-DD", bookingTime one of TIME_SLOTS — same shape as createBooking.
+ */
+const rescheduleBooking = async (bookingId, customerId, { bookingDate, bookingTime } = {}) => {
+  // Required lazily: service.service is the owner of the slot rules.
+  const { getServiceAvailability, TIME_SLOTS } = require("./service.service");
+
+  const booking = await Booking.findOne({ _id: bookingId, customer: customerId })
+    .populate("service", "title")
+    .populate("provider", "user");
+
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  if (!["pending", "accepted"].includes(booking.status)) {
+    throw new Error(`Cannot reschedule a booking that is already ${humanizeStatus(booking.status)}`);
+  }
+
+  // Invoice-driven bookings have no service and no slot grid — their timing
+  // is agreed in chat.
+  if (!booking.service) {
+    throw new Error("This booking was arranged over chat. Message the provider to change the time.");
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingDate || "") || !TIME_SLOTS.includes(bookingTime)) {
+    throw new Error("Pick a valid date and time slot");
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  if (bookingDate < today) {
+    throw new Error("Pick a date from today onwards");
+  }
+
+  const currentDate = booking.bookingDate ? booking.bookingDate.toISOString().slice(0, 10) : null;
+  if (currentDate === bookingDate && booking.bookingTime === bookingTime) {
+    throw new Error("Your booking is already at that time");
+  }
+
+  const { slots } = await getServiceAvailability(booking.service._id, bookingDate);
+  if (!slots.find((slot) => slot.time === bookingTime)?.available) {
+    throw new Error("That slot was just taken. Please pick another time.");
+  }
+
+  const wasAccepted = booking.status === "accepted";
+  booking.bookingDate = bookingDate;
+  booking.bookingTime = bookingTime;
+  if (wasAccepted) booking.status = "pending";
+  await booking.save();
+
+  const serviceTitle = booking.service.title || "your booking";
+  const when = `${new Date(bookingDate).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  })} at ${bookingTime}`;
+
+  await Promise.all([
+    notificationService.createNotification({
+      user: customerId,
+      type: "booking_rescheduled",
+      audience: "customer",
+      message: wasAccepted
+        ? `"${serviceTitle}" moved to ${when}. Waiting for the provider to confirm the new time.`
+        : `"${serviceTitle}" moved to ${when}.`,
+      referenceId: booking._id,
+    }),
+    notificationService.createNotification({
+      user: booking.provider.user,
+      type: "booking_rescheduled",
+      audience: "provider",
+      message: `The customer moved "${serviceTitle}" to ${when}. Please confirm the new time.`,
+      referenceId: booking._id,
+    }),
+  ]);
+
+  return booking;
+};
+
+/**
  * One booking, readable by the customer who made it, the provider assigned
  * to it, or an admin. Anyone else gets "not found" rather than a 403, so the
  * endpoint can't be used to probe which booking ids exist.
@@ -337,11 +445,13 @@ const getAllBookings = async (query) => {
 };
 
 module.exports = {
+  buildReference,
   createBooking,
   getProviderBookings,
   getCustomerBookings,
   updateBookingStatus,
   cancelBooking,
+  rescheduleBooking,
   getBookingById,
   getAllBookings,
 };

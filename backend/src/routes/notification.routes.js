@@ -10,6 +10,9 @@ router.use(protect);
 router.get("/", notificationController.getMyNotifications);
 router.get("/unread-count", notificationController.getUnreadCount);
 router.put("/read-all", notificationController.markAllAsRead);
+router.get("/summary", notificationController.getSummary);
+router.get("/preferences", notificationController.getPreferences);
+router.put("/preferences", notificationController.updatePreferences);
 
 router.put("/:id/read", notificationController.markAsRead);
 router.delete("/:id", notificationController.deleteNotification);

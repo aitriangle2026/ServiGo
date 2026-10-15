@@ -1,6 +1,8 @@
 const chatService = require("../services/chat.service");
 const uploadToCloudinary = require("../utils/uploadToCloudinary");
-const { getIO } = require("../sockets/socket");
+const { getIO, isViewingConversation } = require("../sockets/socket");
+const notificationService = require("../services/notification.service");
+const Notification = require("../models/Notification");
 
 const startConversation = async (req, res) => {
   try {
@@ -28,6 +30,14 @@ const getConversations = async (req, res) => {
 const getMessages = async (req, res) => {
   try {
     const { conversation, messages } = await chatService.listMessages(req.params.id, req.user._id);
+
+    // Opening the chat is reading it — clear its "New Message" notification,
+    // which also lets the next message raise a fresh one.
+    Notification.find({ user: req.user._id, type: "new_message", referenceId: req.params.id, isRead: false })
+      .select("_id")
+      .then((rows) => Promise.all(rows.map((row) => notificationService.markAsRead(row._id, req.user._id))))
+      .catch(() => {});
+
     res.status(200).json({ success: true, data: { conversation, messages } });
   } catch (error) {
     res.status(error.status || 400).json({ success: false, message: error.message });
@@ -65,7 +75,7 @@ const sendMessage = async (req, res) => {
       return res.status(400).json({ success: false, message: "A file is required for this message type" });
     }
 
-    const { message, recipientUserId } = await chatService.sendMessage(req.params.id, req.user._id, {
+    const { message, conversation, recipientUserId } = await chatService.sendMessage(req.params.id, req.user._id, {
       type,
       text,
       attachmentUrl,
@@ -83,10 +93,46 @@ const sendMessage = async (req, res) => {
       // still saved, the recipient just won't get a live push.
     }
 
+    // Never fails the send — the message is already saved and delivered.
+    notifyRecipient({ conversation, message, recipientUserId, senderId: req.user._id }).catch(() => {});
+
     res.status(201).json({ success: true, data: message });
   } catch (error) {
     res.status(error.status || 400).json({ success: false, message: error.message });
   }
+};
+
+/**
+ * A "New Message" notification for the other participant — unless they have
+ * the chat open, or already have an unread one for this conversation (one
+ * per unread run, not one per message).
+ */
+const notifyRecipient = async ({ conversation, message, recipientUserId, senderId }) => {
+  if (!recipientUserId) return;
+  const conversationId = conversation._id;
+
+  if (await isViewingConversation(recipientUserId, conversationId)) return;
+
+  const alreadyWaiting = await Notification.exists({
+    user: recipientUserId,
+    type: "new_message",
+    referenceId: conversationId,
+    isRead: false,
+  });
+  if (alreadyWaiting) return;
+
+  const senderName =
+    `${message.sender?.firstName || ""} ${message.sender?.lastName || ""}`.trim() || "Someone";
+  const recipientRole = chatService.getRole(conversation, senderId) === "customer" ? "provider" : "customer";
+  const preview = message.type === "text" ? `"${conversation.lastMessage}"` : conversation.lastMessage;
+
+  await notificationService.createNotification({
+    user: recipientUserId,
+    type: "new_message",
+    audience: recipientRole,
+    message: `${senderName}: ${preview}`,
+    referenceId: conversationId,
+  });
 };
 
 module.exports = {

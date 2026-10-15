@@ -58,6 +58,22 @@ const jobRequestSchema = new mongoose.Schema(
       default: [],
     },
 
+    // Providers who marked this request "Not interested". Only hides it for
+    // them — the customer and other providers are unaffected.
+    dismissedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ProviderProfile",
+      },
+    ],
+
+    // The booking created when the customer accepted a proposal.
+    awardedBooking: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
+      default: null,
+    },
+
     // open      — accepting proposals
     // awarded   — a proposal was accepted; an Order now exists for this job
     // cancelled — customer withdrew it before awarding

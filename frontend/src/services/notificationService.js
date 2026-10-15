@@ -16,6 +16,23 @@ export const notificationService = {
     return data;
   },
 
+  /** Totals per category: { total, unread, categories: { booking: { total, unread }, ... } } */
+  getSummary: async () => {
+    const { data } = await axios.get(ENDPOINTS.NOTIFICATIONS.SUMMARY);
+    return data;
+  },
+
+  /** { booking, payment, review, message } — true means notify. */
+  getPreferences: async () => {
+    const { data } = await axios.get(ENDPOINTS.NOTIFICATIONS.PREFERENCES);
+    return data;
+  },
+
+  updatePreferences: async (changes) => {
+    const { data } = await axios.put(ENDPOINTS.NOTIFICATIONS.PREFERENCES, changes);
+    return data;
+  },
+
   markAsRead: async (id) => {
     const { data } = await axios.put(ENDPOINTS.NOTIFICATIONS.MARK_READ(id));
     return data;

@@ -1,4 +1,5 @@
 const Favorite = require("../models/Favorite");
+const Booking = require("../models/Booking");
 
 const addServiceFavorite = async (userId, serviceId) => {
   const exists = await Favorite.findOne({
@@ -6,18 +7,16 @@ const addServiceFavorite = async (userId, serviceId) => {
     service: serviceId,
   });
 
-  if (exists) {
-    throw new Error("Already in favorites");
-  }
+  // Saving twice is a no-op, not an error — the heart may simply be out of
+  // date in another tab.
+  const favorite =
+    exists ||
+    (await Favorite.create({
+      customer: userId,
+      service: serviceId,
+    }));
 
-  const favorite = await Favorite.create({
-    customer: userId,
-    service: serviceId,
-  });
-
-  return await Favorite.findById(favorite._id)
-    .populate("service")
-    .populate("provider");
+  return favorite;
 };
 
 const addProviderFavorite = async (userId, providerId) => {
@@ -26,32 +25,56 @@ const addProviderFavorite = async (userId, providerId) => {
     provider: providerId,
   });
 
-  if (exists) {
-    throw new Error("Already in favorites");
-  }
+  const favorite =
+    exists ||
+    (await Favorite.create({
+      customer: userId,
+      provider: providerId,
+    }));
 
-  const favorite = await Favorite.create({
-    customer: userId,
-    provider: providerId,
-  });
-
-  return await Favorite.findById(favorite._id)
-    .populate("provider")
-    .populate("service");
+  return favorite;
 };
 
+// Only what a customer should see of a provider — the profile also holds NIC
+// numbers, ID scans, a selfie and bank details.
+const PUBLIC_PROVIDER_FIELDS =
+  "user profileImage bio tagline experience categories workingArea.city workingArea.district " +
+  "isVerified isAvailable averageRating totalReviews";
+
 const getMyFavorites = async (userId) => {
-  return await Favorite.find({
+  const favorites = await Favorite.find({
     customer: userId,
   })
     .populate({
       path: "provider",
-      populate: {
-        path: "user",
-        select: "firstName lastName email phone",
-      },
+      select: PUBLIC_PROVIDER_FIELDS,
+      populate: [
+        { path: "user", select: "firstName lastName profileImage" },
+        { path: "categories", select: "name" },
+      ],
     })
-    .populate("service");
+    .populate({
+      path: "service",
+      populate: { path: "category", select: "name" },
+    })
+    .sort("-createdAt")
+    .lean();
+
+  // Completed-job counts for the saved professionals, in one query.
+  const providerIds = favorites.filter((f) => f.provider).map((f) => f.provider._id);
+  if (providerIds.length === 0) return favorites;
+
+  const counts = await Booking.aggregate([
+    { $match: { provider: { $in: providerIds }, status: "completed" } },
+    { $group: { _id: "$provider", count: { $sum: 1 } } },
+  ]);
+  const countById = new Map(counts.map((c) => [String(c._id), c.count]));
+
+  return favorites.map((f) =>
+    f.provider
+      ? { ...f, provider: { ...f.provider, completedJobs: countById.get(String(f.provider._id)) || 0 } }
+      : f
+  );
 };
 
 const removeFavorite = async (favoriteId, userId) => {

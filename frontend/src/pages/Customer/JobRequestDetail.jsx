@@ -16,6 +16,7 @@ import Spinner from '@/components/common/Spinner';
 import useFetch from '@/hooks/useFetch';
 import { jobRequestService } from '@/services/jobRequestService';
 import { formatCurrency } from '@/utils/formatCurrency';
+import ProposalsSection from './ProposalsSection';
 
 const STATUS_STYLES = {
   open: { label: 'Open for quotes', variant: 'accent' },
@@ -179,6 +180,8 @@ export default function JobRequestDetail() {
             </div>
           </div>
         )}
+
+        <ProposalsSection jobRequest={jobRequest} onAwarded={refetch} />
 
         {jobRequest.status === 'open' && (
           <div className="rounded-2xl border border-border bg-surface p-6">

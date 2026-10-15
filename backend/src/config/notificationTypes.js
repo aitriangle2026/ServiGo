@@ -317,6 +317,17 @@ const NOTIFICATION_TYPES = {
     },
   },
 
+  // ─── Messages ──────────────────────────────────────────────────────────
+  // referenceId is the conversation id. Sent only when the recipient doesn't
+  // have that chat open, and only once per unread run (see chat.controller).
+  new_message: {
+    category: "message",
+    audiences: {
+      customer: { title: "New Message", link: (id) => (id ? `/messages/${id}` : "/messages") },
+      provider: { title: "New Message", link: (id) => (id ? `/messages/${id}` : "/messages") },
+    },
+  },
+
   system: {
     category: "system",
     audiences: {
@@ -333,6 +344,25 @@ const NOTIFICATION_TYPES = {
 const LEGACY_TYPES = ["booking", "booking_status", "review", "payment", "general"];
 
 const NOTIFICATION_AUDIENCES = ["customer", "provider", "admin"];
+
+// Categories a user may switch off in Notification Settings. Everything else
+// (account, verification, system) always gets through — muting those would
+// hide things the user has to act on.
+const PREFERENCE_CATEGORIES = ["booking", "payment", "review", "message"];
+
+// The pre-catalog values still in old documents, filed under the category
+// they meant.
+const LEGACY_CATEGORY = { booking: "booking", booking_status: "booking", review: "review", payment: "payment", general: "system" };
+
+/** @returns {string} the category for any stored type, legacy ones included. */
+const categoryOf = (type) =>
+  NOTIFICATION_TYPES[type]?.category || LEGACY_CATEGORY[type] || "system";
+
+/** @returns {string[]} every stored type value that belongs to `category`. */
+const typesInCategory = (category) => [
+  ...Object.keys(NOTIFICATION_TYPES).filter((type) => NOTIFICATION_TYPES[type].category === category),
+  ...Object.keys(LEGACY_CATEGORY).filter((type) => LEGACY_CATEGORY[type] === category),
+];
 
 /**
  * Looks up the headline, destination and icon family for one (type,
@@ -373,5 +403,8 @@ module.exports = {
   NOTIFICATION_AUDIENCES,
   LEGACY_TYPES,
   NOTIFICATION_TYPE_KEYS: Object.keys(NOTIFICATION_TYPES),
+  PREFERENCE_CATEGORIES,
+  categoryOf,
+  typesInCategory,
   resolveNotification,
 };

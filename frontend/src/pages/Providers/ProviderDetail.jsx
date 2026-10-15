@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   FaStar,
   FaMapMarkerAlt,
@@ -21,6 +21,8 @@ import ProviderBookingPanel from './sections/ProviderBookingPanel';
 import { providerService } from '@/services/providerService';
 import { reviewService } from '@/services/reviewService';
 import { useAuth } from '@/context/AuthContext';
+import useFavorites from '@/hooks/useFavorites';
+import FavoriteButton from '@/components/common/FavoriteButton';
 import { formatCurrency } from '@/utils/formatCurrency';
 
 const PLACEHOLDER = '/images/service-placeholder.jpg';
@@ -59,7 +61,9 @@ const relativeTime = (value) => {
 export default function ProviderDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hash } = useLocation();
   const { isAuthenticated } = useAuth();
+  const favorites = useFavorites();
 
   const [provider, setProvider] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -128,6 +132,18 @@ export default function ProviderDetail() {
     sectionRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  // Deep links such as /providers/:id#services (Favorites' "Book Now") land
+  // on that section once the page has rendered.
+  useEffect(() => {
+    const key = hash.replace('#', '');
+    if (!provider || !key || !TABS.some((tab) => tab.key === key)) return undefined;
+    const raf = requestAnimationFrame(() => {
+      setActiveTab(key);
+      sectionRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [hash, provider]);
+
   const requireAuth = (action) => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -175,7 +191,19 @@ export default function ProviderDetail() {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <ProviderHero provider={provider} name={name} role={role} />
+      <ProviderHero
+        provider={provider}
+        name={name}
+        role={role}
+        action={
+          favorites.canFavorite && (
+            <FavoriteButton
+              isFavorite={favorites.isProviderFavorite(provider._id)}
+              onToggle={() => favorites.toggleProvider(provider)}
+            />
+          )
+        }
+      />
 
       {/* ─── Tabs ─────────────────────────────────────────────────── */}
       <div className="sticky top-20 z-20 border-y border-border bg-background/95 backdrop-blur">

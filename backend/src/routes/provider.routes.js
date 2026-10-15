@@ -26,6 +26,14 @@ router.get(
   providerController.getMyProfile
 );
 
+// Literal path — must stay above the public "/:id" route.
+router.get(
+  "/earnings",
+  protect,
+  authorize("provider"),
+  providerController.getEarnings
+);
+
 router.get(
   "/pending",
   protect,

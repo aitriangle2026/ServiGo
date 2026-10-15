@@ -49,6 +49,34 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    // Optional personal details, filled in from My Profile.
+    dateOfBirth: {
+      type: Date,
+      default: null,
+    },
+
+    gender: {
+      type: String,
+      enum: ["", "female", "male", "other"],
+      default: "",
+    },
+
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: [300, "Bio can be at most 300 characters"],
+      default: "",
+    },
+
+    // Which notification categories this user wants. Only the categories in
+    // PREFERENCE_CATEGORIES (config/notificationTypes.js) can be muted.
+    notificationPreferences: {
+      booking: { type: Boolean, default: true },
+      payment: { type: Boolean, default: true },
+      review: { type: Boolean, default: true },
+      message: { type: Boolean, default: true },
+    },
+
     isEmailVerified: {
       type: Boolean,
       default: false,

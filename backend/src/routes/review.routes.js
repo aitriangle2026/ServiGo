@@ -8,6 +8,10 @@ const {
   authorize,
 } = require("../middleware/auth.middleware");
 
+// Provider's own reviews with booking details — private, unlike the
+// public /provider/:providerId list below.
+router.get("/mine", protect, authorize("provider"), reviewController.getMyProviderReviews);
+
 router.get(
   "/provider/:providerId",
   reviewController.getProviderReviews

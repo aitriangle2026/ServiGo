@@ -92,6 +92,23 @@ const cancelBooking = async (req, res) => {
   }
 };
 
+const rescheduleBooking = async (req, res) => {
+  try {
+    const booking = await bookingService.rescheduleBooking(req.params.id, req.user._id, req.body);
+
+    res.status(200).json({
+      success: true,
+      message: "Booking rescheduled",
+      data: booking,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 const getBookingById = async (req, res) => {
   try {
     const booking = await bookingService.getBookingById(req.params.id, req.user);
@@ -116,6 +133,7 @@ module.exports = {
   getCustomerBookings,
   updateBookingStatus,
   cancelBooking,
+  rescheduleBooking,
   getBookingById,
   getAllBookings,
 };

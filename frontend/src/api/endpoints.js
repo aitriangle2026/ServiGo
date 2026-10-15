@@ -6,6 +6,7 @@ export const ENDPOINTS = {
     LOGOUT: '/auth/logout',
     REFRESH_TOKEN: '/auth/refresh-token',
     ME: '/auth/profile',
+    CHANGE_PASSWORD: '/auth/change-password',
     SEND_OTP: '/auth/send-otp',
     VERIFY_OTP: '/auth/verify-otp',
     RESEND_OTP: '/auth/resend-otp',
@@ -18,11 +19,14 @@ export const ENDPOINTS = {
     UPLOAD_AVATAR: '/users/avatar',
     ADDRESSES: '/users/addresses',
     ADDRESS: (id) => `/users/addresses/${id}`,
+    PROFILE_PHOTO: '/users/profile/photo',
+    DEACTIVATE: '/users/me/deactivate',
   },
  SERVICES: {
     LIST: '/services',
     DETAILS: (id) => `/services/${id}`,
     IMAGES: (id) => `/services/${id}/images`,
+    MINE: '/services/mine',
   },
   CATEGORIES: {
     LIST: '/categories',
@@ -37,6 +41,7 @@ export const ENDPOINTS = {
     CERTIFICATES: '/provider/profile/certificates',
     CERTIFICATE_DELETE: (certificateId) => `/provider/profile/certificates/${certificateId}`,
     PAYOUT_DETAILS: '/provider/profile/payout-details',
+    EARNINGS: '/provider/earnings',
     VERIFICATION_SCORE: '/provider/verification/score',
     VERIFICATION_SUBMIT: '/provider/verification/submit',
     PENDING: '/provider/pending',
@@ -45,6 +50,7 @@ export const ENDPOINTS = {
   REVIEWS: {
     BY_PROVIDER: (providerId) => `/reviews/provider/${providerId}`,
     BY_SERVICE: (serviceId) => `/reviews/service/${serviceId}`,
+    MINE: '/reviews/mine',
     CREATE: '/reviews',
     UPDATE: (id) => `/reviews/${id}`,
     DELETE: (id) => `/reviews/${id}`,
@@ -57,6 +63,7 @@ export const ENDPOINTS = {
     UPDATE_STATUS: (id) => `/bookings/${id}/status`,
     DETAILS: (id) => `/bookings/${id}`,
     CANCEL: (id) => `/bookings/${id}/cancel`,
+    RESCHEDULE: (id) => `/bookings/${id}/reschedule`,
   },
 
   FAVORITES: {
@@ -90,6 +97,8 @@ export const ENDPOINTS = {
     MARK_READ: (id) => `/notifications/${id}/read`,
     MARK_ALL_READ: '/notifications/read-all',
     DELETE: (id) => `/notifications/${id}`,
+    SUMMARY: '/notifications/summary',
+    PREFERENCES: '/notifications/preferences',
   },
 
   JOB_REQUESTS: {
@@ -99,6 +108,16 @@ export const ENDPOINTS = {
     ADMIN_LIST: '/job-requests/admin',
     DETAILS: (id) => `/job-requests/${id}`,
     CANCEL: (id) => `/job-requests/${id}/cancel`,
+    PIPELINE: '/job-requests/pipeline',
+    PROPOSALS: (id) => `/job-requests/${id}/proposals`,
+    DISMISS: (id) => `/job-requests/${id}/dismiss`,
+    UNDISMISS: (id) => `/job-requests/${id}/undismiss`,
+  },
+
+  PROPOSALS: {
+    ACCEPT: (id) => `/proposals/${id}/accept`,
+    REJECT: (id) => `/proposals/${id}/reject`,
+    WITHDRAW: (id) => `/proposals/${id}/withdraw`,
   },
 
   SUPPORT: {

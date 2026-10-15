@@ -15,6 +15,7 @@ import {
 import Navbar from '@/components/layout/Navbar';
 import FindProsHero from './sections/FindProsHero';
 import ProviderGridCard from '@/components/cards/ProviderGridCard';
+import useFavorites from '@/hooks/useFavorites';
 import FilterSidebar, { ALL_CITIES } from '@/components/common/FilterSidebar';
 import ProviderCardSkeleton from '@/components/common/ProviderCardSkeleton';
 import EmptyState from '@/components/common/EmptyState';
@@ -59,6 +60,7 @@ const DEFAULT_FILTERS = {
 };
 
 const FindPros = () => {
+  const favorites = useFavorites();
   const [searchParams] = useSearchParams();
 
   const [query, setQuery] = useState(searchParams.get('q') || '');
@@ -328,6 +330,8 @@ const FindPros = () => {
                         provider={provider}
                         index={index}
                         view={view}
+                        isFavorite={favorites.isProviderFavorite(provider._id || provider.id)}
+                        onToggleFavorite={favorites.canFavorite ? favorites.toggleProvider : undefined}
                       />
                     ))}
                   </div>

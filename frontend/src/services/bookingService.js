@@ -17,6 +17,12 @@ export const bookingService = {
     return data;
   },
 
+  // { bookingDate: 'YYYY-MM-DD', bookingTime: '10:00 AM' }
+  reschedule: async (id, payload) => {
+    const { data } = await axios.put(ENDPOINTS.BOOKINGS.RESCHEDULE(id), payload);
+    return data;
+  },
+
   getMyBookings: async () => {
     // Backend returns { success, count, data: [...] }
     const { data } = await axios.get(ENDPOINTS.BOOKINGS.CUSTOMER);

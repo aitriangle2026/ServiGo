@@ -42,6 +42,13 @@ router.put(
   bookingController.cancelBooking
 );
 
+router.put(
+  "/:id/reschedule",
+  protect,
+  authorize("customer"),
+  bookingController.rescheduleBooking
+);
+
 router.get(
   "/",
   protect,

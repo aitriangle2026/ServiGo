@@ -18,6 +18,7 @@ const chatRoutes = require("./routes/chat.routes");
 const invoiceRoutes = require("./routes/invoice.routes");
 const supportRoutes = require("./routes/support.routes");
 const jobRequestRoutes = require("./routes/jobRequest.routes");
+const proposalRoutes = require("./routes/proposal.routes");
 
 // Middlewares
 //
@@ -68,6 +69,7 @@ app.use("/api/v1/chat", chatRoutes);
 app.use("/api/v1/invoices", invoiceRoutes);
 app.use("/api/v1/support", supportRoutes);
 app.use("/api/v1/job-requests", jobRequestRoutes);
+app.use("/api/v1/proposals", proposalRoutes);
 app.use("/api/v1/auth/forgot-password", otpLimiter);
 app.use("/api/v1/auth/send-otp", otpLimiter);
 app.use("/api/v1/auth/resend-otp", otpLimiter);

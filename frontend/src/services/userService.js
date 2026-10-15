@@ -7,6 +7,26 @@ export const userService = {
     return data;
   },
 
+  uploadPhoto: async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const { data } = await axios.put(ENDPOINTS.USERS.PROFILE_PHOTO, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  },
+
+  /** Returns { token, refreshToken } — the old refresh token stops working. */
+  changePassword: async ({ currentPassword, newPassword }) => {
+    const { data } = await axios.put(ENDPOINTS.AUTH.CHANGE_PASSWORD, { currentPassword, newPassword });
+    return data;
+  },
+
+  deactivate: async (password) => {
+    const { data } = await axios.post(ENDPOINTS.USERS.DEACTIVATE, { password });
+    return data;
+  },
+
   listAddresses: async () => {
     const { data } = await axios.get(ENDPOINTS.USERS.ADDRESSES);
     return data;

@@ -16,6 +16,12 @@ export const serviceService = {
     return data;
   },
 
+  /** Provider: their own services, inactive included, with bookingCount. */
+  getMine: async () => {
+    const { data } = await axios.get(ENDPOINTS.SERVICES.MINE);
+    return data;
+  },
+
   search: async (params = {}) => {
     // Backend filters via query params directly on GET /services
     const { data } = await axios.get(ENDPOINTS.SERVICES.LIST, { params });

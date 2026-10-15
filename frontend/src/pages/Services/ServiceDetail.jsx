@@ -32,6 +32,8 @@ import { serviceService } from '@/services/serviceService';
 import { reviewService } from '@/services/reviewService';
 import { chatService } from '@/services/chatService';
 import { useAuth } from '@/context/AuthContext';
+import useFavorites from '@/hooks/useFavorites';
+import FavoriteButton from '@/components/common/FavoriteButton';
 import { formatCurrency } from '@/utils/formatCurrency';
 
 // Platform-level promises — these apply to every listing, so they're UI
@@ -71,6 +73,7 @@ export default function ServiceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const favorites = useFavorites();
 
   const [service, setService] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -265,9 +268,18 @@ export default function ServiceDetail() {
               </p>
             )}
 
-            <h1 className="mt-3 font-display text-[2rem] font-medium leading-[1.08] text-secondary sm:text-[2.6rem]">
-              {service.title}
-            </h1>
+            <div className="mt-3 flex items-start justify-between gap-4">
+              <h1 className="font-display text-[2rem] font-medium leading-[1.08] text-secondary sm:text-[2.6rem]">
+                {service.title}
+              </h1>
+              {favorites.canFavorite && (
+                <FavoriteButton
+                  isFavorite={favorites.isServiceFavorite(service._id)}
+                  onToggle={() => favorites.toggleService(service)}
+                  className="mt-1.5"
+                />
+              )}
+            </div>
 
             <div className="mt-3.5 flex flex-wrap items-center gap-3">
               <span className="flex items-center gap-1.5 text-[13px]">
